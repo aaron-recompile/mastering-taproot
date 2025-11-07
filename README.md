@@ -19,11 +19,11 @@ Foundational Bitcoin engineering knowledge should be reproducible, inspectable, 
 
 ### Repository Structure
 
-All manuscript chapters are in:
-book/manuscript/
+All manuscript chapters are in:  
+[`book/manuscript/`](./book/manuscript/)
 
-The table of contents is maintained in:
-book/manuscript/SUMMARY.md
+The table of contents is maintained at:  
+[`book/manuscript/SUMMARY.md`](./book/manuscript/SUMMARY.md)
 
 ---
 
