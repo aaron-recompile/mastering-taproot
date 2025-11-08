@@ -353,7 +353,7 @@ if __name__ == "__main__":
 
 Let's analyze the actual data from our transaction execution. When this code runs, it produces a real transaction that was broadcast to testnet:
 
-**Transaction ID**: `bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355`
+**Transaction ID**: [`bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355`](https://mempool.space/testnet/tx/bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355)
 
 **Raw Transaction Data**:
 
