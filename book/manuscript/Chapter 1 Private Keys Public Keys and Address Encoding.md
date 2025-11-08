@@ -271,7 +271,7 @@ In later chapters, we’ll focus on what truly matters: the actual scriptPubKey 
 
 Understanding the derivation relationships between keys and addresses is crucial. The diagram below brings together the entire address derivation pipeline—from private key generation to the final on-chain script. While most wallet users only see the address, developers need to trace the full path to understand how Bitcoin enforces ownership and spending conditions.
 
-![Key-pubkey-address relationships](./resources/TheSecurityModel.jpg)
+![Key-pubkey-address relationships](./resources/TheDerivationModel.png)
 
 *Figure 1-4: The derivation relationships between private keys, public keys, addresses, and WIF format*
 
