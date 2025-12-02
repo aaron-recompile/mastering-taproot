@@ -1,0 +1,3 @@
+bitcoin-utils>=0.7.0
+base58>=2.0.0
+
