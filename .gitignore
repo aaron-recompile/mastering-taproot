@@ -1,0 +1,13 @@
+notes/
+
+# Python virtual environments
+venv/
+env/
+.venv/
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Debug notes (internal only, not for publication)
+**/DEBUG_NOTES.md

@@ -91,11 +91,22 @@ tx_in.script_sig = unlocking_script  # Signature goes in scriptSig
 **SegWit P2WPKH Signing:**
 ```python
 # SegWit transaction signing
-signature = private_key.sign_input(tx, 0, from_address.to_script_pub_key())
+# CRITICAL: Must use sign_segwit_input, not sign_input
+# Get script_code from public key's legacy address (required for SegWit)
+script_code = public_key.get_address().to_script_pub_key()
 
-# Set witness data (NOT scriptSig)
-txin.witness = [signature, public_key.to_hex()]  # Signature goes in witness
-# scriptSig remains empty for native SegWit
+signature = private_key.sign_segwit_input(
+    tx,
+    0,
+    script_code,  # Legacy P2PKH format script code
+    to_satoshis(utxo_amount)  # Input amount required for SegWit
+)
+
+# Set empty scriptSig (required for native SegWit)
+txin.script_sig = Script([])
+
+# Set witness data using TxWitnessInput wrapper
+tx.witnesses.append(TxWitnessInput([signature, public_key.to_hex()]))
 ```
 
 ## 4.2 Creating a Complete SegWit Transaction
@@ -107,16 +118,17 @@ Let's build a real SegWit transaction step by step to understand how SegWit solv
 ```python
 from bitcoinutils.setup import setup
 from bitcoinutils.keys import PrivateKey, P2wpkhAddress
-from bitcoinutils.transactions import Transaction, TxInput, TxOutput
+from bitcoinutils.transactions import Transaction, TxInput, TxOutput, TxWitnessInput
 from bitcoinutils.utils import to_satoshis
+from bitcoinutils.script import Script
 
 setup('testnet')
 
 # Create keys and addresses
-private_key = PrivateKey('cTALNpTpRbbxTCJ2A5Vq88UxT44w1PE2cYqiB3n4hRvzyCev1Wwo')
+private_key = PrivateKey('cPeon9fBsW2BxwJTALj3hGzh9vm8C52Uqsce7MzXGS1iFJkPF4AT')
 public_key = private_key.get_public_key()
-from_address = P2wpkhAddress(public_key.get_address().to_hash160())
-to_address = P2wpkhAddress('tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080')
+from_address = public_key.get_segwit_address()
+to_address = P2wpkhAddress('tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4')
 
 print(f"From: {from_address.to_string()}")
 print(f"To:   {to_address.to_string()}")
@@ -124,9 +136,11 @@ print(f"To:   {to_address.to_string()}")
 
 **Output:**
 ```
-From: tb1q8kxy8xrkj5nc8vf4kk6m3khjklmn0tqmfp8n7w
-To:   tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080
+From: tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
+To:   tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
 ```
+
+**Note:** This example uses a real testnet transaction that was successfully broadcast. The transaction TXID is `271cf6285479885a5ffa4817412bfcf55e7d2cf43ab1ede06c4332b46084e3e6` and can be viewed on the testnet explorer.
 
 ## 4.3 SegWit Transaction Construction and Analysis
 
@@ -137,30 +151,37 @@ Let's build the transaction step by step, observing data structure changes at ea
 ### Phase 1: Create Unsigned Transaction
 
 ```python
-# Create transaction components
-txin = TxInput('a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890', 0)
-txout = TxOutput(to_satoshis(0.00028500), to_address.to_script_pub_key())
+# UTXO information (real testnet transaction)
+utxo_txid = '1454438e6f417d710333fbab118058e2972127bdd790134ab74937fa9dddbc48'
+utxo_vout = 0
+utxo_amount = 1000  # sats
 
-# Build unsigned transaction
-tx = Transaction([txin], [txout])
+# Create transaction components
+txin = TxInput(utxo_txid, utxo_vout)
+txout = TxOutput(to_satoshis(0.00000666), to_address.to_script_pub_key())
+
+# Build unsigned transaction (has_segwit=True required for witness data)
+tx = Transaction([txin], [txout], has_segwit=True)
 print(f"Unsigned TX: {tx.serialize()}")
 ```
 
 **Unsigned Transaction Output:**
-`0200000001a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890000000000ffffffff01146f0000000000001600141d7cd6c75c2e86c08d0bad1b4c982c3e4f33e7f500000000`
+`0200000000010148bcdd9dfa3749b74a1390d7bd272197e2588011abfb3303717d416f8e4354140000000000fdffffff019a02000000000000160014c5b28d6bba91a2693a9b1876bcd3929323890fb200000000`
 
 **Parsed Components:**
 ```
 Version:      02000000
+Marker:       00 (SegWit indicator)
+Flag:         01 (SegWit version)
 Input Count:  01
-TXID:         a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890
+TXID:         1454438e6f417d710333fbab118058e2972127bdd790134ab74937fa9dddbc48
 VOUT:         00000000
 ScriptSig:    00 (empty, 0 bytes)
-Sequence:     ffffffff
+Sequence:     fffffffd (RBF enabled - Replace-By-Fee)
 Output Count: 01
-Value:        146f000000000000 (28,500 sats)
+Value:        9a02000000000000 (666 sats)
 Script Len:   16 (22 bytes)
-ScriptPubKey: 00141d7cd6c75c2e86c08d0bad1b4c982c3e4f33e7f5
+ScriptPubKey: 0014c5b28d6bba91a2693a9b1876bcd3929323890fb2
 Locktime:     00000000
 ```
 
@@ -172,17 +193,30 @@ Locktime:     00000000
 ### Phase 2: Add SegWit Signature
 
 ```python
-# Sign for SegWit
-signature = private_key.sign_input(tx, 0, from_address.to_script_pub_key())
+# CRITICAL: Get script_code from public key's legacy address
+# This must be in P2PKH format (76a914...88ac), not SegWit format
+script_code = public_key.get_address().to_script_pub_key()
 
-# Set witness data (NOT scriptSig)
-txin.witness = [signature, public_key.to_hex()]
+# Sign for SegWit using sign_segwit_input (not sign_input)
+signature = private_key.sign_segwit_input(
+    tx,
+    0,
+    script_code,  # Legacy P2PKH format script code
+    to_satoshis(utxo_amount / 100000000)  # Input amount required
+)
+
+# Set empty scriptSig (required for native SegWit)
+txin.script_sig = Script([])
+
+# Set witness data using TxWitnessInput wrapper
+public_key_hex = public_key.to_hex()
+tx.witnesses.append(TxWitnessInput([signature, public_key_hex]))
 
 # Check the differences
 print(f"ScriptSig: '{txin.script_sig.to_hex()}'")  # Still empty
-print(f"Witness Items: {len(txin.witness)}")
+print(f"Witness Items: 2")
 print(f"  [0] Signature: {signature[:20]}...{signature[-10:]}")
-print(f"  [1] Public Key: {public_key.to_hex()}")
+print(f"  [1] Public Key: {public_key_hex}")
 
 # Complete signed transaction
 signed_tx = tx.serialize()
@@ -193,10 +227,12 @@ print(f"Signed TX: {signed_tx}")
 ```
 ScriptSig: ''
 Witness Items: 2
-  [0] Signature: 304402201234567890ab...567890abcd
-  [1] Public Key: 021f8f6e70fcb96c29e6c87b47ac21e5e9c2e9e5f5f5f5f5f5f5f5f5
-Signed TX: 02000000000101a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890000000000ffffffff01146f0000000000001600141d7cd6c75c2e86c08d0bad1b4c982c3e4f33e7f50247304402201234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef022012345678121021f8f6e70fcb96c29e6c87b47ac21e5e9c2e9e5f5f5f5f5f5f5f500000000
+  [0] Signature: 3044022015098d26918b...49e33c0301
+  [1] Public Key: 02898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519
+Signed TX: 0200000000010148bcdd9dfa3749b74a1390d7bd272197e2588011abfb3303717d416f8e4354140000000000fdffffff019a02000000000000160014c5b28d6bba91a2693a9b1876bcd3929323890fb202473044022015098d26918b46ab36b0d1b50ee502b33d5c5b5257c76bd6d00ccb31452c25ae0220256e82d4df10981f25f91e5273be39fced8fe164434616c94fa48f3549e33c03012102898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c851900000000
 ```
+
+**Verified Transaction:** This transaction was successfully broadcast to testnet. TXID: `271cf6285479885a5ffa4817412bfcf55e7d2cf43ab1ede06c4332b46084e3e6`
 
 **Critical Changes:**
 - ScriptSig remains empty
@@ -207,31 +243,35 @@ Signed TX: 02000000000101a1b2c3d4e5f67890123456789012345678901234567890123456789
 
 **Before Signing (Phase 1):**
 ```
-Standard Bitcoin Transaction Format
+Standard Bitcoin Transaction Format (with SegWit marker/flag)
 ├── Version: 02000000
+├── Marker: 00 (SegWit indicator)
+├── Flag: 01 (SegWit version)
 ├── Input Count: 01
-├── Input Data: a1b2c3d4...00ffffffff
+├── Input Data: 48bcdd9d...00fdffffff (ScriptSig empty)
 ├── Output Count: 01  
-├── Output Data: 146f0000...3e4f33e7f5
+├── Output Data: 9a020000...3890fb2
 └── Locktime: 00000000
 
-Total: 86 bytes
+Total: 84 bytes (base transaction)
 ```
 
 **After Signing (Phase 2):**
 ```
 SegWit Transaction Format
 ├── Version: 02000000
-├── Marker: 00 (NEW - SegWit indicator)
-├── Flag: 01 (NEW - SegWit version)  
+├── Marker: 00 (SegWit indicator)
+├── Flag: 01 (SegWit version)  
 ├── Input Count: 01
-├── Input Data: a1b2c3d4...00ffffffff (ScriptSig still empty)
+├── Input Data: 48bcdd9d...00fdffffff (ScriptSig still empty)
 ├── Output Count: 01
-├── Output Data: 146f0000...3e4f33e7f5
-├── Witness Data: 0247304402...f5f5f5f5 (NEW - authorization data)
+├── Output Data: 9a020000...3890fb2
+├── Witness Data: 0247304402...c8519 (NEW - authorization data)
 └── Locktime: 00000000
 
-Total: 193 bytes (added witness section)
+Total: 191 bytes (added witness section: 82 bytes)
+
+**Note:** Sequence `0xfffffffd` indicates RBF (Replace-By-Fee) is enabled, allowing the transaction to be replaced with a higher fee if needed. This is why the chain explorer shows "RBF" in the transaction characteristics.
 ```
 Note: marker/flag (00 01) appear only in the serialized form to indicate SegWit and do not participate in the txid (they do participate in the wtxid).
 
@@ -243,19 +283,19 @@ Note: marker/flag (00 01) appear only in the serialized form to indicate SegWit 
 [MARKER]        00      (SegWit indicator)
 [FLAG]          01      (SegWit version)
 [INPUT_COUNT]   01
-[TXID]          a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890
+[TXID]          1454438e6f417d710333fbab118058e2972127bdd790134ab74937fa9dddbc48
 [VOUT]          00000000
 [SCRIPTSIG_LEN] 00      (Empty - authorization moved to witness)
-[SEQUENCE]      ffffffff
+[SEQUENCE]      fffffffd
 [OUTPUT_COUNT]  01
-[VALUE]         146f000000000000  (28,500 satoshis)
+[VALUE]         9a02000000000000  (666 satoshis)
 [SCRIPT_LEN]    16      (22 bytes)
-[SCRIPTPUBKEY]  00141d7cd6c75c2e86c08d0bad1b4c982c3e4f33e7f5
+[SCRIPTPUBKEY]  0014c5b28d6bba91a2693a9b1876bcd3929323890fb2
 [WITNESS_ITEMS] 02      (2 items: signature + public key)
 [SIG_LEN]       47      (71 bytes)
-[SIGNATURE]     304402201234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef022012345678
+[SIGNATURE]     3044022015098d26918b46ab36b0d1b50ee502b33d5c5b5257c76bd6d00ccb31452c25ae0220256e82d4df10981f25f91e5273be39fced8fe164434616c94fa48f3549e33c0301
 [PK_LEN]        21      (33 bytes)
-[PUBLIC_KEY]    021f8f6e70fcb96c29e6c87b47ac21e5e9c2e9e5f5f5f5f5f5f5f5f5
+[PUBLIC_KEY]    02898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519
 [LOCKTIME]      00000000
 ```
 
@@ -267,17 +307,17 @@ Now let's trace through the complete script execution using our real transaction
 
 **Locking Script (ScriptPubKey):**
 ```
-00141d7cd6c75c2e86c08d0bad1b4c982c3e4f33e7f5
+0014c5b28d6bba91a2693a9b1876bcd3929323890fb2
 ```
 
 **Parsed:**
 - `00`: OP_0 (witness version 0)
 - `14`: Push 20 bytes
-- `1d7cd6c75c2e86c08d0bad1b4c982c3e4f33e7f5`: Public key hash (20 bytes)
+- `c5b28d6bba91a2693a9b1876bcd3929323890fb2`: Public key hash (20 bytes)
 
-**Witness Stack:**
-- Item 0: `304402201234...5678` (signature, 71 bytes)
-- Item 1: `021f8f6e70fcb96c29e6c87b47ac21e5e9c2e9e5f5f5f5f5f5f5f5` (public key, 33 bytes)
+**Witness Stack (from real transaction):**
+- Item 0: `3044022015098d26918b46ab36b0d1b50ee502b33d5c5b5257c76bd6d00ccb31452c25ae0220256e82d4df10981f25f91e5273be39fced8fe164434616c94fa48f3549e33c0301` (signature, 71 bytes)
+- Item 1: `02898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519` (public key, 33 bytes)
 
 ### SegWit Execution Model
 
@@ -296,8 +336,8 @@ Bitcoin Core recognizes the OP_0 <20-bytes> pattern and executes P2WPKH as equiv
 ### 1. Load Witness Items onto Stack
 
 ```
-│ 021f8f6e70fc...f5f5f5f5 (public_key)    │
-│ 304402201234...ab5678 (signature)       │
+│ 02898711e6bf...c8519 (public_key)       │
+│ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
 
@@ -306,17 +346,17 @@ Bitcoin Core recognizes the OP_0 <20-bytes> pattern and executes P2WPKH as equiv
 #### 2a. OP_0: Push witness version
 ```
 │ 00 (witness_version)                     │
-│ 021f8f6e70fc...f5f5f5f5 (public_key)    │
-│ 304402201234...ab5678 (signature)       │
+│ 02898711e6bf...c8519 (public_key)       │
+│ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
 
 #### 2b. PUSH PubKey Hash: Expected hash from script
 ```
-│ 1d7cd6c75c2e...4f33e7f5 (expected_hash) │
+│ c5b28d6bba91...890fb2 (expected_hash)  │
 │ 00 (witness_version)                     │
-│ 021f8f6e70fc...f5f5f5f5 (public_key)    │
-│ 304402201234...ab5678 (signature)       │
+│ 02898711e6bf...c8519 (public_key)       │
+│ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
 
@@ -346,35 +386,35 @@ This pattern recognition framework is what enables Taproot's OP_1 programs—the
 
 #### 3a. OP_DUP: Duplicate public key
 ```
-│ 021f8f6e70fc...f5f5f5f5 (public_key)    │
-│ 021f8f6e70fc...f5f5f5f5 (public_key)    │
-│ 304402201234...ab5678 (signature)       │
+│ 02898711e6bf...c8519 (public_key)       │
+│ 02898711e6bf...c8519 (public_key)       │
+│ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
 
 #### 3b. OP_HASH160: Hash public key
 ```
-│ 1d7cd6c75c2e...4f33e7f5 (computed_hash) │
-│ 021f8f6e70fc...f5f5f5f5 (public_key)    │
-│ 304402201234...ab5678 (signature)       │
+│ c5b28d6bba91...890fb2 (computed_hash)  │
+│ 02898711e6bf...c8519 (public_key)       │
+│ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
 **(Hash160 = RIPEMD160(SHA256(public_key)))**
-In BIP143, the P2WPKH scriptCode used in the signature message is exactly the P2PKH template: OP_DUP OP_HASH160 <20-byte-hash> OP_EQUALVERIFY OP_CHECKSIG.
+In BIP143, the P2WPKH scriptCode used in the signature message is exactly the P2PKH template: `OP_DUP OP_HASH160 <20-byte-hash> OP_EQUALVERIFY OP_CHECKSIG`. This is why we derive `script_code` from `public_key.get_address().to_script_pub_key()` (legacy format: `76a914c5b28d6bba91a2693a9b1876bcd3929323890fb288ac`), not from the SegWit address.
 
 #### 3c. PUSH Expected Hash: From witness program
 ```
-│ 1d7cd6c75c2e...4f33e7f5 (expected_hash) │
-│ 1d7cd6c75c2e...4f33e7f5 (computed_hash) │
-│ 021f8f6e70fc...f5f5f5f5 (public_key)    │
-│ 304402201234...ab5678 (signature)       │
+│ c5b28d6bba91...890fb2 (expected_hash)  │
+│ c5b28d6bba91...890fb2 (computed_hash)  │
+│ 02898711e6bf...c8519 (public_key)       │
+│ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
 
 #### 3d. OP_EQUALVERIFY: Verify hash match
 ```
-│ 021f8f6e70fc...f5f5f5f5 (public_key)    │
-│ 304402201234...ab5678 (signature)       │
+│ 02898711e6bf...c8519 (public_key)       │
+│ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
 **(Hash verification: computed_hash == expected_hash ✓)**
@@ -415,14 +455,13 @@ Stable transaction IDs enable:
 
 ### Economic Incentives
 
-SegWit introduces a revolutionary fee calculation that incentivizes efficient script design，Fees are based on weight
+SegWit introduces weight-based fee accounting:
 
 ```
 Transaction Weight = (Base Size × 4) + Witness Size
 Virtual Size = Weight ÷ 4
 ```
-Intuition: witness bytes count 1 WU/byte, base bytes 4 WU/byte.
-The 75% witness discount creates powerful economic incentives because witness data (signatures, scripts) only contributes 1 weight unit per byte, while base transaction data contributes 4 weight units per byte. Multisig/scripts benefit more when moved to witness (P2WSH), but savings are structure-dependent, not a fixed 25%/75%.
+Intuition: Witness bytes are charged at 1 weight unit/byte while base bytes are 4 wu/byte. Savings depend on how much authorization data moves to witness (structure-dependent, not a fixed 25%/75%).
 
 **Space Efficiency Through Separation:**
 
@@ -442,13 +481,13 @@ Total: ~300 bytes in witness (75% discount)
 This architectural change means complex scripts become economically viable. A SegWit multisig transaction pays approximately 25% less in fees compared to its legacy equivalent, while simple single-signature transactions see more modest savings.
 
 **Taproot Amplification:**
-SegWit's economic framework sets the stage for Taproot's even greater efficiencies. Taproot's signature aggregation can make complex multi-party arrangements as cheap as single-signature transactions, fully leveraging the witness discount structure that SegWit established.
+SegWit's economic framework sets the stage for Taproot's even greater efficiencies. Taproot's one-signature on-chain via key aggregation can make complex multi-party arrangements as cheap as single-signature transactions, fully leveraging the witness discount structure that SegWit established.
 
 ## 4.6 Chapter Summary
 
 This chapter demonstrated SegWit's core innovations through a complete transaction implementation:
 
-**Witness Structure**: Separating signature data from transaction logic creates the foundation for Taproot's script trees and signature aggregation.
+**Witness Structure**: Separating signature data from transaction logic creates the foundation for Taproot's script trees and one-signature on-chain via key aggregation.
 
 **Malleability Resistance**: Stable transaction IDs enable the Layer 2 ecosystem that Taproot optimizes with more efficient authorization schemes.
 
