@@ -106,19 +106,38 @@ This project values *precision and reproducibility* above abstraction or opinion
 
 ## 🔄 Recent Public Updates
 
-(auto-updated during evaluation period)
+*(latest development activity)*
 
-- **Dec 1, 2025** — Added full runnable Python examples for Chapters 1–3 (key generation, P2PKH, P2SH, SegWit witness execution).
+- **Dec 5, 2025** — Added full runnable Python examples for Chapters 1–4, covering:
+  - Key generation, P2PKH/P2WPKH signing
+  - Complete P2SH spend flow
+  - SegWit construction + witness execution + byte-level parsing
+  - Refactored Chapter 4 scripts into a clean three-part structure:
+    - `01_legacy_vs_segwit_comparison.py`
+    - `02_create_segwit_transaction.py`
+    - `03_parse_segwit_transaction.py`
 
-- **Dec 2, 2025** — Corrected previous_txid in Chapter 6 script-path spend; verified with new testnet transaction.
+- **Next 7 days (Dec 6–12)** — Uploading Chapters 5–8 code examples, including:
+  - Taproot key tweaking (BIP340/341 math)
+  - Single-leaf script-path spends
+  - Merkle tree constructor + control-block generator
+  - Full 4-leaf MAST example (hashlock, multisig, CSV, single-sig)
+  - All examples will include testnet-verified transactions and stack-execution traces.
 
-- **Dec 3, 2025** — Preparing Taproot key-tweaking examples (BIP340/341 math + address construction).
+- **Following week (Dec 13–19)** — Publishing code for the two new high-impact chapters:
+  - **Chapter 9 — Ordinals & BRC-20**
+    - Taproot witness as a general-purpose data layer
+    - Non-executable Tapscript envelopes
+    - Full commit/reveal pair on testnet
+  - **Chapter 10 — RGB**
+    - Tapret commitments, consignment pipeline, PSBT flows
+    - regtest reproducible examples 
+    - Single-use seals + client-side validation workflow
 
-- **This Week** — Uploading single-leaf Taproot spend + OP_CHECKSIG path.
-
-- **Next Week** — Multi-leaf Merkle tree constructor + control-block generator (matching book Chapter 7).
-
-- **Upcoming** — Full 4-leaf script-path spend (hashlock, multisig, CSV timelock, single-sig) with testnet-verified witness.
+- **Late December** — Frontier Notes & Advanced Topics:
+  - Lightning with Taproot (MuSig2, PTLC, v3 anchor channels)
+  - BitVM / Citrea (Taproot-anchored computation and ZK commitment patterns)
+  - Design-space notes tying Ordinals → RGB → LN → BitVM into a unified Taproot framework
 
 ---
 
