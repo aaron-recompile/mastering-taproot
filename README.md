@@ -118,17 +118,29 @@ This project values *precision and reproducibility* above abstraction or opinion
 
 *(latest development activity)*
 
-Jan 6, 2026 — Added code examples for Chapter 7, covering:
+Jan 6–8, 2026 — Added code examples for Chapters 6–7, covering:
+
+• Single-leaf Taproot script tree construction
+
+• Commit-Reveal pattern implementation
+
+• Key Path and Script Path spending
 
 • Dual-leaf Taproot script tree construction
-
-• Hash Lock script path spending (preimage-based)
-
-• Bob Script path spending (signature-based)
 
 • Control block verification and witness ordering
 
 • Complete implementation with testnet-verified transactions
+
+Chapter 6 includes four scripts demonstrating the fundamental Taproot contract pattern:
+
+• 01_create_taproot_commitment.py
+
+• 02_key_path_spending.py
+
+• 03_script_path_spending.py
+
+• 04_verify_script_execution.py
 
 Chapter 7 includes four scripts demonstrating the full dual-path spending flow:
 
@@ -178,9 +190,7 @@ Recent manuscript additions:
 
 Ongoing work (Jan 2026):
 
-• Chapters 6, 8 (code in progress)  
-
-  – Single-leaf Taproot script-path contracts  
+• Chapter 8 (code in progress)  
 
   – Full four-leaf MAST constructions  
 
