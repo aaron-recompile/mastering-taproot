@@ -261,7 +261,7 @@ While address encoding involves many subtle rules—like version bytes, checksum
 
 👉 addresses are for humans. They’re just a user-friendly representation of locking scripts (scriptPubKey), not a required component of the protocol itself.
 
-Once you recognize the prefix (1, 3, bc1q, bc1p), you already know what kind of script is behind it.From the node’s perspective, Bitcoin never stores addresses—only scripts.
+Once you recognize the prefix (1, 3, bc1q, bc1p), you already know what kind of script is behind it. From the node’s perspective, Bitcoin never stores addresses—only scripts.
 
 
 In later chapters, we’ll focus on what truly matters: the actual scriptPubKey associated with each address type. That’s where the real logic lives—and where Bitcoin’s scripting and programmability begin. If you can predict the script behind the address, you can reason about how it’s spent.
@@ -314,4 +314,4 @@ This chapter established the cryptographic foundation for Bitcoin transactions:
 - Different address types use different encoding schemes: Base58Check, Bech32, and Bech32m
 - Taproot introduces x-only public keys and Bech32m encoding for enhanced efficiency
 
-All the components introduced here—keys, hashes, encodings—are what Bitcoin Script ultimately manipulates or validates.In the next chapter, we'll explore how these keys and addresses interact with Bitcoin Script—the programming language that defines spending conditions and enables Taproot's advanced capabilities.
+All the components introduced here—keys, hashes, encodings—are what Bitcoin Script ultimately manipulates or validates. In the next chapter, we'll explore how these keys and addresses interact with Bitcoin Script—the programming language that defines spending conditions and enables Taproot's advanced capabilities.
