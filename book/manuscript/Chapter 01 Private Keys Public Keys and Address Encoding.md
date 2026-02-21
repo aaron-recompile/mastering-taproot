@@ -127,8 +127,7 @@ public_key_compressed = key.public_hex          # 33 bytes
 public_key_uncompressed = key.public_uncompressed_hex  # 65 bytes
 
 print(f"Compressed:   {public_key_compressed}")
-print(f"Uncompressed: {public_key_uncompressed[:70]}...") 
-# Truncated for display
+print(f"Uncompressed: {public_key_uncompressed}") 
 
 ```
 
@@ -136,7 +135,7 @@ print(f"Uncompressed: {public_key_uncompressed[:70]}...")
 
 ```
 Compressed:   0250be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3
-Uncompressed: 0450be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3...
+Uncompressed: 0450be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d36dbc816fe21ba41dfa6e6a92d0ccd62240b8a9eaa87d508b2ee330ef03162a90
 
 ```
 
