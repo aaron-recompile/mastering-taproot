@@ -59,7 +59,7 @@ def main():
     p2pkh_script = from_address.to_script_pub_key()
 
     # Sign the transaction input
-    signature = private_key.sign_input(tx, 0, p2pkh_script)
+    signature = private_key.sign_input(tx, 1, p2pkh_script) ##Is the tx index here supposed to be 1 like the above in the txin section?
 
     # Create the unlocking script: <signature> <public_key>
     txin.script_sig = Script([signature, public_key.to_hex()])
