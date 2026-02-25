@@ -549,10 +549,8 @@ Next, let's observe the complete stack execution process of Hash Lock script:
 OP_SHA256 pops the preimage data from stack top, calculates its SHA256 hash, then pushes result back to stack:
 
 ```
-| 936a185caaa266bb9cbe981e9e05cb78cd732b0...                      |
-| b3280eb944412bb6f8f8f07af                                       |
-|  (computed_hash)                                                |
-└─────────────────────────────────────────────────────────────────┘
+| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af        | (computed_hash)
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 **(Calculation Process: SHA256("helloworld") = 936a185c...07af)**
@@ -562,8 +560,8 @@ OP_SHA256 pops the preimage data from stack top, calculates its SHA256 hash, the
 Script pushes preset expected hash value to stack top:
 
 ```
-| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af        |(expected_hash)                                                           |
-| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af        | (computed_hash)                                                           |
+| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af        | (expected_hash)
+| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af        | (computed_hash)
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
