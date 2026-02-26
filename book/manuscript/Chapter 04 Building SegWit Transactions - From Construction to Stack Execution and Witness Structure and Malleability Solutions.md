@@ -33,7 +33,7 @@ SegWit Transaction Structure:
 ┌─────────────────────────────────────────┐
 │        Witness Data (Separated)         │  } Committed separately
 │    ┌─────────────────────────────────┐  │
-│    │ Signature │ Public Key         │  │  (For P2WPKH)
+│    │ Signature │ Public Key          │  │  (For P2WPKH)
 │    └─────────────────────────────────┘  │
 └─────────────────────────────────────────┘
 ```
@@ -51,15 +51,15 @@ This malleability breaks protocols that depend on specific TXIDs, particularly L
 
 ```
 Lightning Channel Setup:
-Funding TX (TXID_A) → Commitment TX → Timeout TX
+Funding TX (TXID_A) -> Commitment TX -> Timeout TX
                           ↓              ↓
                      References      References
                        TXID_A         TXID_B
 
 If TXID_A changes due to malleability:
-→ Commitment TX becomes invalid
-→ Timeout TX becomes invalid  
-→ Entire channel unusable
+-> Commitment TX becomes invalid
+-> Timeout TX becomes invalid  
+-> Entire channel unusable
 ```
 
 ### Legacy vs SegWit Code Comparison
@@ -140,7 +140,7 @@ From: tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
 To:   tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
 ```
 
-**Note:** This example uses a real testnet transaction that was successfully broadcast. The transaction TXID is `271cf6285479885a5ffa4817412bfcf55e7d2cf43ab1ede06c4332b46084e3e6` and can be viewed on the testnet explorer.
+**Note:** This example uses a real testnet transaction that was successfully broadcast. The transaction TXID is [`271cf628...084e3e6`](https://mempool.space/testnet/tx/271cf6285479885a5ffa4817412bfcf55e7d2cf43ab1ede06c4332b46084e3e6).
 
 ## 4.3 SegWit Transaction Construction and Analysis
 
@@ -166,7 +166,11 @@ print(f"Unsigned TX: {tx.serialize()}")
 ```
 
 **Unsigned Transaction Output:**
-`0200000000010148bcdd9dfa3749b74a1390d7bd272197e2588011abfb3303717d416f8e4354140000000000fdffffff019a02000000000000160014c5b28d6bba91a2693a9b1876bcd3929323890fb200000000`
+```text
+0200000000010148bcdd9dfa3749b74a1390d7bd272197e2588011abfb3303717d41
+6f8e4354140000000000fdffffff019a02000000000000160014c5b28d6bba91a269
+3a9b1876bcd3929323890fb200000000
+```
 
 **Parsed Components:**
 ```
@@ -174,7 +178,7 @@ Version:      02000000
 Marker:       00 (SegWit indicator)
 Flag:         01 (SegWit version)
 Input Count:  01
-TXID:         1454438e6f417d710333fbab118058e2972127bdd790134ab74937fa9dddbc48
+TXID:         1454438e...9dddbc48
 VOUT:         00000000
 ScriptSig:    00 (empty, 0 bytes)
 Sequence:     fffffffd (RBF enabled - Replace-By-Fee)
@@ -228,11 +232,15 @@ print(f"Signed TX: {signed_tx}")
 ScriptSig: ''
 Witness Items: 2
   [0] Signature: 3044022015098d26918b...49e33c0301
-  [1] Public Key: 02898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519
-Signed TX: 0200000000010148bcdd9dfa3749b74a1390d7bd272197e2588011abfb3303717d416f8e4354140000000000fdffffff019a02000000000000160014c5b28d6bba91a2693a9b1876bcd3929323890fb202473044022015098d26918b46ab36b0d1b50ee502b33d5c5b5257c76bd6d00ccb31452c25ae0220256e82d4df10981f25f91e5273be39fced8fe164434616c94fa48f3549e33c03012102898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c851900000000
+  [1] Public Key: 02898711...74c8519
+Signed TX:
+0200000000010148bcdd9dfa3749b74a1390d7bd272197e2588011abfb3303717d41
+6f8e4354140000000000fdffffff019a02000000000000160014c5b28d6bba91a269
+3a9b1876bcd3929323890fb202473044022015098d26918b46ab36b0d1b50ee502b3
+3d5c5b5257c76bd6d00ccb31452c25ae0220256e82d4df10981f25f91e5273be39fc
+ed8fe164434616c94fa48f3549e33c03012102898711e6bf63f5cbe1b38c05e89d6c
+391c59e9f8f695da44bf3d20ca674c851900000000
 ```
-
-**Verified Transaction:** This transaction was successfully broadcast to testnet. TXID: `271cf6285479885a5ffa4817412bfcf55e7d2cf43ab1ede06c4332b46084e3e6`
 
 **Critical Changes:**
 - ScriptSig remains empty
@@ -283,7 +291,7 @@ Note: marker/flag (00 01) appear only in the serialized form to indicate SegWit 
 [MARKER]        00      (SegWit indicator)
 [FLAG]          01      (SegWit version)
 [INPUT_COUNT]   01
-[TXID]          1454438e6f417d710333fbab118058e2972127bdd790134ab74937fa9dddbc48
+[TXID]          1454438e...9dddbc48
 [VOUT]          00000000
 [SCRIPTSIG_LEN] 00      (Empty - authorization moved to witness)
 [SEQUENCE]      fffffffd
@@ -293,9 +301,9 @@ Note: marker/flag (00 01) appear only in the serialized form to indicate SegWit 
 [SCRIPTPUBKEY]  0014c5b28d6bba91a2693a9b1876bcd3929323890fb2
 [WITNESS_ITEMS] 02      (2 items: signature + public key)
 [SIG_LEN]       47      (71 bytes)
-[SIGNATURE]     3044022015098d26918b46ab36b0d1b50ee502b33d5c5b5257c76bd6d00ccb31452c25ae0220256e82d4df10981f25f91e5273be39fced8fe164434616c94fa48f3549e33c0301
+[SIGNATURE]     30440220...49e33c0301
 [PK_LEN]        21      (33 bytes)
-[PUBLIC_KEY]    02898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519
+[PUBLIC_KEY]    02898711...74c8519
 [LOCKTIME]      00000000
 ```
 
@@ -316,8 +324,8 @@ Now let's trace through the complete script execution using our real transaction
 - `c5b28d6bba91a2693a9b1876bcd3929323890fb2`: Public key hash (20 bytes)
 
 **Witness Stack (from real transaction):**
-- Item 0: `3044022015098d26918b46ab36b0d1b50ee502b33d5c5b5257c76bd6d00ccb31452c25ae0220256e82d4df10981f25f91e5273be39fced8fe164434616c94fa48f3549e33c0301` (signature, 71 bytes)
-- Item 1: `02898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519` (public key, 33 bytes)
+- Item 0: `30440220...49e33c0301` (signature, 71 bytes)
+- Item 1: `02898711...74c8519` (public key, 33 bytes)
 
 ### SegWit Execution Model
 
@@ -329,7 +337,7 @@ Bitcoin Core recognizes the OP_0 <20-bytes> pattern and executes P2WPKH as equiv
 
 **Initial State:**
 ```
-│ (empty)                                  │
+│ (empty)                                 │
 └─────────────────────────────────────────┘
 ```
 
@@ -345,7 +353,7 @@ Bitcoin Core recognizes the OP_0 <20-bytes> pattern and executes P2WPKH as equiv
 
 #### 2a. OP_0: Push witness version
 ```
-│ 00 (witness_version)                     │
+│ 00 (witness_version)                    │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
@@ -353,8 +361,8 @@ Bitcoin Core recognizes the OP_0 <20-bytes> pattern and executes P2WPKH as equiv
 
 #### 2b. PUSH PubKey Hash: Expected hash from script
 ```
-│ c5b28d6bba91...890fb2 (expected_hash)  │
-│ 00 (witness_version)                     │
+│ c5b28d6bba91...890fb2 (expected_hash)   │
+│ 00 (witness_version)                    │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
@@ -394,18 +402,18 @@ This pattern recognition framework is what enables Taproot's OP_1 programs—the
 
 #### 3b. OP_HASH160: Hash public key
 ```
-│ c5b28d6bba91...890fb2 (computed_hash)  │
+│ c5b28d6bba91...890fb2 (computed_hash)   │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
 **(Hash160 = RIPEMD160(SHA256(public_key)))**
-In BIP143, the P2WPKH scriptCode used in the signature message is exactly the P2PKH template: `OP_DUP OP_HASH160 <20-byte-hash> OP_EQUALVERIFY OP_CHECKSIG`. This is why we derive `script_code` from `public_key.get_address().to_script_pub_key()` (legacy format: `76a914c5b28d6bba91a2693a9b1876bcd3929323890fb288ac`), not from the SegWit address.
+In BIP143, the P2WPKH scriptCode used in the signature message is exactly the P2PKH template: `OP_DUP OP_HASH160 <20-byte-hash> OP_EQUALVERIFY OP_CHECKSIG`. This is why we derive `script_code` from `public_key.get_address().to_script_pub_key()` (legacy format: `76a914c5b2...890fb288ac`), not from the SegWit address.
 
 #### 3c. PUSH Expected Hash: From witness program
 ```
-│ c5b28d6bba91...890fb2 (expected_hash)  │
-│ c5b28d6bba91...890fb2 (computed_hash)  │
+│ c5b28d6bba91...890fb2 (expected_hash)   │
+│ c5b28d6bba91...890fb2 (computed_hash)   │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
@@ -421,7 +429,7 @@ In BIP143, the P2WPKH scriptCode used in the signature message is exactly the P2
 
 #### 3e. OP_CHECKSIG: Final signature verification
 ```
-│ 1 (TRUE)                                 │
+│ 1 (TRUE)                                │
 └─────────────────────────────────────────┘
 ```
 **(ECDSA signature verification against transaction data ✓)**
@@ -429,10 +437,10 @@ In BIP143, the P2WPKH scriptCode used in the signature message is exactly the P2
 ### Execution Result: SUCCESS
 
 The P2WPKH spending is authorized with:
-- ✅ Witness version valid (0)
-- ✅ Public key hash matches witness program
-- ✅ Signature verification passed
-- ✅ Transaction malleability resistant (TXID excludes witness)
+- [OK] Witness version valid (0)
+- [OK] Public key hash matches witness program
+- [OK] Signature verification passed
+- [OK] Transaction malleability resistant (TXID excludes witness)
 
 SegWit introduces two identifiers: the txid (hash of the base transaction, excludes witness) and the wtxid (includes witness). Miners commit the block’s witness data via the witness commitment (Merkle root of wtxids) in the coinbase.
 
@@ -458,7 +466,7 @@ Stable transaction IDs enable:
 SegWit introduces weight-based fee accounting:
 
 ```
-Transaction Weight = (Base Size × 4) + Witness Size
+Transaction Weight = (Base Size * 4) + Witness Size
 Virtual Size = Weight ÷ 4
 ```
 Intuition: Witness bytes are charged at 1 weight unit/byte while base bytes are 4 wu/byte. Savings depend on how much authorization data moves to witness (structure-dependent, not a fixed 25%/75%).

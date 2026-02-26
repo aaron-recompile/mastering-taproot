@@ -27,7 +27,7 @@ Let's analyze the actual structure of a four-leaf script tree implemented and va
 
 ### Shared Taproot Address
 
-- **Address**: `tb1pjfdm902y2adr08qnn4tahxjvp6x5selgmvzx63yfqk2hdey02yvqjcr29q`
+- **Address**: `tb1pjfdm...jcr29q`
 - **Feature**: Five different spending methods using the same address
 
 ### Script Tree Design
@@ -135,7 +135,7 @@ tree = [[script0, script1], [script2, script3]]
 # Generate Taproot address using Alice's internal key
 taproot_address = alice_pub.get_taproot_address(tree)
 print(f"Taproot Address: {taproot_address.to_string()}")
-# Output: tb1pjfdm902y2adr08qnn4tahxjvp6x5selgmvzx63yfqk2hdey02yvqjcr29q
+# Output: tb1pjfdm...jcr29q
 ```
 
 ## Core Implementation of Script Path Spending
@@ -146,7 +146,10 @@ print(f"Taproot Address: {taproot_address.to_string()}")
 def spend_hashlock_path():
     """Script 0: SHA256 Hashlock spending"""
     # UTXO information
-    commit_txid = "245563c5aa4c6d32fc34eed2f182b5ed76892d13370f067dc56f34616b66c468"
+    commit_txid = (
+        "245563c5aa4c6d32fc34eed2f182b5ed"
+        "76892d13370f067dc56f34616b66c468"
+    )
     vout = 0
     input_amount = 1200  # satoshis
     output_amount = 666
@@ -168,7 +171,7 @@ def spend_hashlock_path():
     ]))
 
     return tx
-# Testnet transaction ID: 1ba4835fca1c94e7eb0016ce37c6de2545d07d84a97436f8db999f33a6fd6845
+# Testnet transaction ID: 1ba4835f...a6fd6845
 ```
 
 ### 2. Multisig Script Path Spending
@@ -177,7 +180,10 @@ def spend_hashlock_path():
 def spend_multisig_path():
     """Script 1: 2-of-2 Multisig spending"""
     # UTXO information
-    commit_txid = "1ed5a3e97a6d3bc0493acc2aac15011cd99000b52e932724766c3d277d76daac"
+    commit_txid = (
+        "1ed5a3e97a6d3bc0493acc2aac15011c"
+        "d99000b52e932724766c3d277d76daac"
+    )
     vout = 0
     input_amount = 1400
     output_amount = 668
@@ -215,7 +221,7 @@ def spend_multisig_path():
     ]))
 
     return tx
-# Testnet transaction ID: 1951a3be0f05df377b1789223f6da66ed39c781aaf39ace0bf98c3beb7e604a1
+# Testnet transaction ID: 1951a3be...b7e604a1
 ```
 
 ### 3. CSV Timelock Script Path Spending
@@ -224,7 +230,10 @@ def spend_multisig_path():
 def spend_csv_timelock_path():
     """Script 2: CSV Timelock spending"""
     # UTXO information
-    commit_txid = "9a2bff4161411f25675c730777c7b4f5b2837e19898500628f2010c1610ac345"
+    commit_txid = (
+        "9a2bff4161411f25675c730777c7b4f5"
+        "b2837e19898500628f2010c1610ac345"
+    )
     vout = 0
     input_amount = 1600
     output_amount = 800
@@ -258,7 +267,7 @@ def spend_csv_timelock_path():
     ]))
 
     return tx
-# Testnet transaction ID: 98361ab2c19aa0063f7572cfd0f66cb890b403d2dd12029426613b40d17f41ee
+# Testnet transaction ID: 98361ab2...d17f41ee
 ```
 
 ### 4. Simple Signature Script Path Spending
@@ -267,7 +276,10 @@ def spend_csv_timelock_path():
 def spend_simple_sig_path():
     """Script 3: Simple Signature spending"""
     # UTXO information
-    commit_txid = "632743eb43aa68fb1c486bff48e8b27c436ac1f0d674265431ba8c1598e2aeea"
+    commit_txid = (
+        "632743eb43aa68fb1c486bff48e8b27c"
+        "436ac1f0d674265431ba8c1598e2aeea"
+    )
     vout = 0
     input_amount = 1800
     output_amount = 866
@@ -296,7 +308,7 @@ def spend_simple_sig_path():
     ]))
 
     return tx
-# Testnet transaction ID: 1af46d4c71e121783c3c7195f4b45025a1f38b73fc8898d2546fc33b4c6c71b9
+# Testnet transaction ID: 1af46d4c...4c6c71b9
 ```
 
 ### 5. Key Path Spending (Maximum Privacy)
@@ -305,7 +317,10 @@ def spend_simple_sig_path():
 def spend_key_path():
     """Key Path: Most efficient and private spending method"""
     # UTXO information
-    commit_txid = "42a9796a91cf971093b35685db9cb1a164fb5402aa7e2541ea7693acc1923059"
+    commit_txid = (
+        "42a9796a91cf971093b35685db9cb1a1"
+        "64fb5402aa7e2541ea7693acc1923059"
+    )
     vout = 0
     input_amount = 2000
     output_amount = 888
@@ -326,7 +341,7 @@ def spend_key_path():
     tx.witnesses.append(TxWitnessInput([sig_alice]))
 
     return tx
-# Testnet transaction ID: 1e518aa540bc770df549ec9836d89783ca19fc79b84e7407a882cbe9e95600da
+# Testnet transaction ID: 1e518aa5...e95600da
 ```
 
 ## Multisig Stack Execution Visualization: OP_CHECKSIGADD Innovation
@@ -408,7 +423,7 @@ Execution Process:
 - Verification successful: push (0+1=1)
 
 Stack State:
-| 1           | ← Counter incremented to 1 ✅
+| 1           | <- Counter incremented to 1 [OK]
 | sig_bob     |
 └─────────────┘
 ```
@@ -434,7 +449,7 @@ Execution Process:
 - Verification successful: push (1+1=2)
 
 Stack State:
-| 2           | ← Counter incremented to 2 ✅
+| 2           | <- Counter incremented to 2 [OK]
 └─────────────┘
 ```
 
@@ -456,7 +471,7 @@ Execution Process:
 - Push 1 (indicating script execution success)
 
 Final Stack State:
-| 1           | ← Script execution success flag ✅
+| 1           | <- Script execution success flag [OK]
 └─────────────┘
 ```
 
@@ -491,7 +506,7 @@ witness = [
     cb.to_hex()
 ]
 
-# ❌ Wrong order will cause signature verification failure:
+# [Wrong] Wrong order will cause signature verification failure:
 # witness = [sig_alice, sig_bob, script1.to_hex(), cb.to_hex()]
 ```
 
@@ -511,9 +526,9 @@ paths = {
 
 ### Control Block Verification Practice: Analyzing Real On-Chain Data
 
-Let's use Aaron Recompile's successfully executed multisig transaction as an example to deeply analyze the complete verification process of the Control Block.
+Let's use a successfully executed multisig transaction as an example to deeply analyze the complete verification process of the Control Block.
 
-**Transaction ID**: `1951a3be0f05df377b1789223f6da66ed39c781aaf39ace0bf98c3beb7e604a1`
+**Transaction ID**: [`1951a3be...e604a1`](https://mempool.space/testnet/tx/1951a3be0f05df377b1789223f6da66ed39c781aaf39ace0bf98c3beb7e604a1)
 
 **Executed Script**: Script 1 (2-of-2 Multisig)
 
@@ -526,16 +541,30 @@ def analyze_real_multisig_transaction():
     # Witness stack extracted from on-chain data
     witness_stack = [
         # Bob's signature (first witness item)
-        "31fa0ca7929dac01b908349326183dd7a0f752475d42f11dc2cd0075110ca2a4c255f3e310dfc0800e69609c872254241dcf827847e5b64821cefa6c6db575bc",
+        (
+            "31fa0ca7929dac01b908349326183dd7a0f752475d42f11dc2cd0075110ca2a4"
+            "c255f3e310dfc0800e69609c872254241dcf827847e5b64821cefa6c6db575bc"
+        ),
 
         # Alice's signature (second witness item)
-        "22272de665b998668ae9e97cb72d9814d362ae101ee878caee04da0d2a7efb14e8bcdd7eb8082fad30864ec7f22bce6fb2d2178764a0b2f5427346e4b5821fa0",
+        (
+            "22272de665b998668ae9e97cb72d9814d362ae101ee878caee04da0d2a7efb14"
+            "e8bcdd7eb8082fad30864ec7f22bce6fb2d2178764a0b2f5427346e4b5821fa0"
+        ),
 
         # Multisig script (third witness item)
-        "002050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3ba2084b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5ba5287",
+        (
+            "002050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb"
+            "4d3ba2084b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef"
+            "63af5ba5287"
+        ),
 
         # Control Block (fourth witness item) - 97 bytes
-        "c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3fe78d8523ce9603014b28739a51ef826f791aa17511e617af6dc96a8f10f659eda55197526f26fa309563b7a3551ca945c046e5b7ada957e59160d4d27f299e3"
+        (
+            "c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3"
+            "fe78d8523ce9603014b28739a51ef826f791aa17511e617af6dc96a8f10f659eda"
+            "55197526f26fa309563b7a3551ca945c046e5b7ada957e59160d4d27f299e3"
+        )
     ]
 
     print("=== On-Chain Multisig Transaction Control Block Analysis ===")
@@ -548,7 +577,11 @@ def analyze_real_multisig_transaction():
 def parse_control_block_bytes():
     """Parse detailed structure of 97-byte Control Block"""
 
-    cb_hex = "c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3fe78d8523ce9603014b28739a51ef826f791aa17511e617af6dc96a8f10f659eda55197526f26fa309563b7a3551ca945c046e5b7ada957e59160d4d27f299e3"
+    cb_hex = (
+        "c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3"
+        "fe78d8523ce9603014b28739a51ef826f791aa17511e617af6dc96a8f10f659eda"
+        "55197526f26fa309563b7a3551ca945c046e5b7ada957e59160d4d27f299e3"
+    )
     cb_bytes = bytes.fromhex(cb_hex)
 
     # Byte 0: Version + parity bit
@@ -595,7 +628,11 @@ def reconstruct_merkle_root_step_by_step():
     cb_data = parse_control_block_bytes()
 
     # Step 1: Calculate Script 1 (Multisig) TapLeaf hash
-    multisig_script_hex = "002050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3ba2084b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5ba5287"
+    multisig_script_hex = (
+        "002050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb"
+        "4d3ba2084b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef"
+        "63af5ba5287"
+    )
     script_bytes = bytes.fromhex(multisig_script_hex)
 
     # TapLeaf = Tagged_Hash("TapLeaf", version + length + script)
@@ -643,12 +680,15 @@ def reconstruct_merkle_root_step_by_step():
 
     # Step 5: Elliptic curve point operation (theoretical formula)
     print("\nStep 5: Elliptic Curve Operation")
-    print("Output pubkey = Internal pubkey + TapTweak × G")
+    print("Output pubkey = Internal pubkey + TapTweak * G")
     print("(Actual computation requires elliptic curve library)")
 
     # Step 6: Verify address
-    expected_address = "tb1pjfdm902y2adr08qnn4tahxjvp6x5selgmvzx63yfqk2hdey02yvqjcr29q"
-    print(f"\n✅ Verification Result:")
+    expected_address = (
+        "tb1pjfdm902y2adr08qnn4tahxjvp6x5selgmvzx63yfqk2hdey02yvqj"
+        "cr29q"
+    )
+    print(f"\n[OK] Verification Result:")
     print(f"Expected address: {expected_address}")
     print(f"Control Block verification: Success")
     print(f"Script is indeed included in the original Taproot commitment!")
@@ -688,10 +728,10 @@ Through this real case study, we can see:
 The witness order for multisig is crucial:
 
 ```python
-# ❌ Wrong: Alice signature first
+# [Wrong] Alice signature first
 witness = [sig_alice, sig_bob, script, control_block]
 
-# ✅ Correct: Bob signature first (consumed second)
+# [Correct] Bob signature first (consumed second)
 witness = [sig_bob, sig_alice, script, control_block]
 ```
 
@@ -700,10 +740,10 @@ witness = [sig_bob, sig_alice, script, control_block]
 CSV scripts require specific transaction sequence values:
 
 ```python
-# ❌ Wrong: Default sequence
+# [Wrong] Default sequence
 txin = TxInput(txid, vout)
 
-# ✅ Correct: CSV-compatible sequence
+# [Correct] CSV-compatible sequence
 txin = TxInput(txid, vout, sequence=seq.for_input_sequence())
 ```
 

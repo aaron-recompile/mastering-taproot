@@ -17,17 +17,17 @@ OP_HASH160 <script_hash> OP_EQUAL
 
 **Stage 2: Script Execution**
 ```
-<revealed_script> → Execute as Bitcoin Script
+<revealed_script> -> Execute as Bitcoin Script
 ```
 
 ### P2SH Address Generation Process
 
-P2SH follows the same Hash160 → Base58Check pattern covered in Chapter 1, but hashes the script instead of a public key:
+P2SH follows the same Hash160 -> Base58Check pattern covered in Chapter 1, but hashes the script instead of a public key:
 
 ```
-Script Serialization → hex_encoded_script
-Hash160(script)     → 20_bytes_script_hash  
-Version + Base58Check → 3...address (mainnet)
+Script Serialization -> hex_encoded_script
+Hash160(script)     -> 20_bytes_script_hash  
+Version + Base58Check -> 3...address (mainnet)
 ```
 
 All P2SH addresses begin with "3" on mainnet and "2" on testnet, immediately distinguishing them from P2PKH addresses.
@@ -53,7 +53,7 @@ Consider a blockchain startup with three key stakeholders:
 - **Bob**: CTO with technical oversight  
 - **Carol**: CFO with financial controls
 
-Their treasury policy requires any two signatures for fund movement, preventing both single-person risk and requiring unanimous consensus.
+Their treasury policy requires any two signatures for fund movement, preventing both single-person risk and requiring authorization by a majority of the stakeholders.
 
 ### Multi-signature Script Construction
 
@@ -99,7 +99,12 @@ def create_multisig_p2sh():
 4. Applying Base58Check encoding
 
 **Script Serialization**: The redeem script serializes to:
-`522102898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519210284b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5210317aa89b43f46a0c0cdbd9a302f2508337ba6a06d123854481b52de9c2099601153ae`
+```text
+522102898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519
+210284b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5
+210317aa89b43f46a0c0cdbd9a302f2508337ba6a06d123854481b52de9c20996011
+53ae
+```
 
 Breaking this down:
 - `52`: OP_2
@@ -151,7 +156,7 @@ def spend_multisig_p2sh():
 
 Let's trace through the complete script execution using our real transaction data, understanding Bitcoin Core's two-phase P2SH execution mechanism:
 
-**Transaction ID**: `e68bef534c7536300c3ae5ccd0f79e031cab29d262380a37269151e8ba0fd4e0`
+**Transaction ID**: [`e68bef53...0fd4e0`](https://mempool.space/testnet/tx/e68bef534c7536300c3ae5ccd0f79e031cab29d262380a37269151e8ba0fd4e0)
 
 ## Phase 1: ScriptSig + ScriptPubKey Execution
 
@@ -309,7 +314,7 @@ CheckSequenceVerify (CSV) enables relative time locks, where spending is delayed
 
 ### Real-World Implementation: 3-Block Time Lock
 
-**Transaction ID**: `34f5bf0cf328d77059b5674e71442ded8cdcfc723d0136733e0dbf180861906f`
+**Transaction ID**: [`34f5bf0c...61906f`](https://mempool.space/testnet/tx/34f5bf0cf328d77059b5674e71442ded8cdcfc723d0136733e0dbf180861906f)
 
 This transaction demonstrates a P2SH script that combines CSV time lock with P2PKH signature verification—a common pattern for inheritance and escrow applications.
 
@@ -377,7 +382,7 @@ Let's trace through the execution using real transaction data from our testnet e
 
 **ScriptSig Data**:
 - Signature: `30440220...` (71 bytes)
-- Public Key: `0250be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3` (33 bytes)  
+- Public Key: `0250be5f...6bb4d3` (33 bytes)  
 - Redeem Script: `53b27576a9145cdc...88ac` (28 bytes)
 
 ## Phase 1: P2SH Hash Verification

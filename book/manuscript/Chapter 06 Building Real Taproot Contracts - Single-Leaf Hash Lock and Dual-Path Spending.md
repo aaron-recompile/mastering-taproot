@@ -153,7 +153,11 @@ def create_taproot_commitment():
     output_key = point_add(internal_pubkey, scalar_mult(tweak, G))
     ```
 
-**Generated Intermediate Address**: `tb1p53ncq9ytax924ps66z6al3wfhy6a29w8h6xfu27xem06t98zkmvsakd43h`
+**Generated Intermediate Address**: `tb1p53nc...kd43h`
+
+```text
+tb1p53ncq9ytax924ps66z6al3wfhy6a29w8h6xfu27xem06t98zkmvsakd43h
+```
 
 This is our **intermediate address** or **custody address** where funds are locked. The corresponding ScriptPubKey: `OP_1 <32-byte-output-key>`, is completely indistinguishable from any other Taproot address on the blockchain. External observers cannot distinguish whether this is a simple single-signature or complex conditional contract.
 
@@ -298,13 +302,13 @@ control_block = ControlBlock(
 
 ```
 Control Block Structure (33 bytes):
-┌─────────┬──────────────────────────────────┐
-│ Byte 1  │           Bytes 2-33             │
-├─────────┼──────────────────────────────────┤
-│   c1    │ 50be5fc4...126bb4d3             │
-├─────────┼──────────────────────────────────┤
-│Ver+Parity│         Internal Pubkey          │
-└─────────┴──────────────────────────────────┘
+┌──────────┬──────────────────────────────────┐
+│ Byte 1   │           Bytes 2-33             │
+├──────────┼──────────────────────────────────┤
+│   c1     │     50be5fc4...126bb4d3          │
+├──────────┼──────────────────────────────────┤
+│Ver/Parity│         Internal Pubkey          │
+└──────────┴──────────────────────────────────┘
 
 Analysis:
 - c1 = c0 (leaf version) + 01 (parity flag)
@@ -349,15 +353,15 @@ preimage_hex = preimage.encode('utf-8').hex()
 
 After running the above code, we can observe real transactions on testnet:
 
-**Transaction ID**: `68f7c8f0ab6b3c6f7eb037e36051ea3893b668c26ea6e52094ba01a7722e604f`
+**Transaction ID**: [`68f7c8f0...2e604f`](https://mempool.space/testnet/tx/68f7c8f0ab6b3c6f7eb037e36051ea3893b668c26ea6e52094ba01a7722e604f)
 
 **Witness Data Analysis**:
 
 ```bash
 Witness Stack:
-[0] 68656c6c6f776f726c64                                                     # Preimage
-[1] a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af8851   # Script
-[2] c150be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3     # Control block
+[0] 68656c6c6f776f726c64                    (preimage_hex)
+[1] a820936a...f8f8f07af8851                (script_hex)
+[2] c150be5f...d126bb4d3                    (control_block)
 ```
 
 Let's verify the correctness of this data:
@@ -369,7 +373,7 @@ def verify_preimage_and_script_execution():
     preimage_bytes = bytes.fromhex(preimage_hex)
     preimage_text = preimage_bytes.decode('utf-8')
 
-    print(f"✅ Preimage Verification:")
+    print(f"[OK] Preimage Verification:")
     print(f"   Hexadecimal: {preimage_hex}")
     print(f"   Text Content: '{preimage_text}'")
 
@@ -377,7 +381,7 @@ def verify_preimage_and_script_execution():
     computed_hash = hashlib.sha256(preimage_bytes).hexdigest()
     expected_hash = "936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af"
 
-    print(f"✅ Hash Verification:")
+    print(f"[OK] Hash Verification:")
     print(f"   Computed Hash: {computed_hash}")
     print(f"   Expected Hash: {expected_hash}")
     print(f"   Match Result: {computed_hash == expected_hash}")
@@ -387,7 +391,7 @@ def verify_preimage_and_script_execution():
 verify_preimage_and_script_execution()
 ```
 
-After verifying script legitimacy and preimage correctness, we also need: **Control Block Verification** → Prove script is in Merkle root, **Address Restoration Verification** → Verify legitimacy through tweak, and finally **Stack Execution** → Execute script logic. These are also Bitcoin Core's verification steps.
+After verifying script legitimacy and preimage correctness, we also need: **Control Block Verification** -> Prove script is in Merkle root, **Address Restoration Verification** -> Verify legitimacy through tweak, and finally **Stack Execution** -> Execute script logic. These are also Bitcoin Core's verification steps.
 
 ### Control Block Verification - Prove Script is in Merkle Tree
 
@@ -403,7 +407,7 @@ def verify_script_in_merkle_tree():
     parity = cb_bytes[0] & 0x01          # 0x01 (parity)
     internal_pubkey = cb_bytes[1:33].hex()  # Internal public key
 
-    print(f"✅ Control Block Parsed Successfully:")
+    print(f"[OK] Control Block Parsed Successfully:")
     print(f"   Leaf Version: {hex(leaf_version)}")
     print(f"   Internal Pubkey: {internal_pubkey}")
 
@@ -416,7 +420,7 @@ def verify_script_in_merkle_tree():
     )
     merkle_root = tapleaf_hash  # Single leaf case
 
-    print(f"✅ Script is indeed in Merkle root:")
+    print(f"[OK] Script is indeed in Merkle root:")
     print(f"   TapLeaf Hash: {tapleaf_hash.hex()}")
     print(f"   Merkle Root: {merkle_root.hex()}")
 
@@ -437,9 +441,12 @@ def verify_taproot_address_restoration():
     # Through elliptic curve operation: output_key = internal_pubkey + tweak * G
     # expected_output_key = point_add(internal_pubkey, scalar_mult(tweak, G))
     
-    target_address = "tb1p53ncq9ytax924ps66z6al3wfhy6a29w8h6xfu27xem06t98zkmvsakd43h"
+    target_address = (
+        "tb1p53ncq9ytax924ps66z6al3wfhy6a29w8h6xfu27xem06t98zkmv"
+        "sakd43h"
+    )
     
-    print(f"✅ Address Restoration Verification:")
+    print(f"[OK] Address Restoration Verification:")
     print(f"   Tweak Value: {tweak.hex()}")
     print(f"   Target Address: {target_address}")
     print(f"   Verification Result: Script Path is indeed usable")
@@ -453,13 +460,13 @@ verify_taproot_address_restoration()
 
 If you encounter Script Path spending failures, follow this systematic debugging approach:
 
-### 🔍 Debug Flowchart: "Script Path Spending Failed? Try This"
+### Debug Flowchart: "Script Path Spending Failed? Try This"
 
 **Step 1: Check Witness Stack Order**
 ```
-✅ Correct Order: [preimage, script, control_block]
-❌ Wrong: [control_block, script, preimage]
-❌ Wrong: [script, preimage, control_block]
+[Correct] [preimage, script, control_block]
+[Wrong] [control_block, script, preimage]
+[Wrong] [script, preimage, control_block]
 ```
 
 **Step 2: Verify Script Consistency**
@@ -469,12 +476,12 @@ If you encounter Script Path spending failures, follow this systematic debugging
 
 **Step 3: Validate Control Block**
 - Is internal pubkey correct?
-- Is parity flag (`is_odd`) set properly? → Get from `taproot_address.is_odd()`
+- Is parity flag (`is_odd`) set properly? -> Get from `taproot_address.is_odd()`
 - Does script index match tree position? (0 for single leaf)
 
 **Step 4: Check Input Data Encoding**
 - Is preimage properly UTF-8 encoded then hex converted?
-- Example: `"helloworld" → bytes → "68656c6c6f776f726c64"`
+- Example: `"helloworld" -> bytes -> "68656c6c6f776f726c64"`
 
 **Step 5: Address Restoration Test**
 - Can you rebuild the same Taproot address from internal key + script tree?
@@ -483,25 +490,25 @@ If you encounter Script Path spending failures, follow this systematic debugging
 ### 1. Witness Data Order Errors
 
 ```python
-# ❌ Wrong order - this will cause verification failure
+# [Wrong] Wrong order - this will cause verification failure
 witness = [control_block, script, preimage]  
 
-# ❌ Another wrong order
+# [Wrong] Another wrong order
 witness = [script, preimage, control_block]
 
-# ✅ Correct order  
+# [Correct] Correct order
 witness = [preimage, script, control_block]
 ```
 
-**Quick Fix**: Always remember "Data → Code → Proof" order for Script Path witnesses.
+**Quick Fix**: Always remember "Data -> Code -> Proof" order for Script Path witnesses.
 
 ### 2. Script Serialization Issues
 
 ```python
-# ❌ Wrong: Direct use of strings
+# [Wrong] Direct use of strings
 script_hex = "OP_SHA256 936a185c... OP_EQUALVERIFY OP_TRUE"
 
-# ✅ Correct: Use proper Script object and .to_hex()
+# [Correct] Use proper Script object and .to_hex()
 script = build_hash_lock_script(preimage)
 script_hex = script.to_hex()  # Produces: "a820936a185c...8851"
 ```
@@ -509,10 +516,10 @@ script_hex = script.to_hex()  # Produces: "a820936a185c...8851"
 ### 3. Control Block Parity Errors
 
 ```python
-# ❌ Wrong: Manual calculation or hardcoded values
+# [Wrong] Manual calculation or hardcoded values
 is_odd = True  # Don't guess!
 
-# ✅ Correct: Always get from address object
+# [Correct] Always get from address object
 is_odd = taproot_address.is_odd()
 control_block = ControlBlock(..., is_odd=is_odd)
 ```
@@ -520,7 +527,7 @@ control_block = ControlBlock(..., is_odd=is_odd)
 ### 4. Commit-Reveal Inconsistency
 
 ```python
-# ✅ Best Practice: Use consistent helper functions
+# [Best Practice] Use consistent helper functions
 def build_hash_lock_script(preimage):
     hash_value = hashlib.sha256(preimage.encode('utf-8')).hexdigest()
     return Script(['OP_SHA256', hash_value, 'OP_EQUALVERIFY', 'OP_TRUE'])
@@ -549,10 +556,9 @@ Next, let's observe the complete stack execution process of Hash Lock script:
 OP_SHA256 pops the preimage data from stack top, calculates its SHA256 hash, then pushes result back to stack:
 
 ```
-| 936a185caaa266bb9cbe981e9e05cb78cd732b0...                      |
-| b3280eb944412bb6f8f8f07af                                       |
-|  (computed_hash)                                                |
-└─────────────────────────────────────────────────────────────────┘
+| 936a185c...f8f8f07af  |
+| # computed_hash       |
+└───────────────────────┘
 ```
 
 **(Calculation Process: SHA256("helloworld") = 936a185c...07af)**
@@ -562,9 +568,11 @@ OP_SHA256 pops the preimage data from stack top, calculates its SHA256 hash, the
 Script pushes preset expected hash value to stack top:
 
 ```
-| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af        |(expected_hash)                                                           |
-| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af        | (computed_hash)                                                           |
-└─────────────────────────────────────────────────────────────────────────┘
+| 936a185c...f8f8f07af  |
+| # expected_hash       |
+| 936a185c...f8f8f07af  |
+| # computed_hash       |
+└───────────────────────┘
 ```
 
 **(Two identical hash values now in stack)**
@@ -595,13 +603,21 @@ Finally, OP_TRUE (OP_PUSHNUM_1) pushes value 1 to stack, marking successful scri
 
 Through actual code implementation and on-chain data analysis, we can clearly see the differences between the two spending methods:
 
-| Aspect | Key Path | Script Path |
-| --- | --- | --- |
-| **Witness Data** | 1 element (64-byte signature) | 3 elements (input+script+control block) |
-| **Transaction Size** | ~153 bytes | ~234 bytes |
-| **Privacy Level** | Complete privacy, zero information leakage | Partial privacy, only exposes used script branch |
-| **Verification Complexity** | Single Schnorr signature verification | Control block verification + script execution |
-| **Fee Cost** | Lowest cost | Medium cost (~50% additional overhead) |
+### Key Path
+
+- Witness Data: 1 element (64-byte signature)
+- Transaction Size: ~153 bytes
+- Privacy Level: Complete privacy, zero information leakage
+- Verification Complexity: Single Schnorr signature verification
+- Fee Cost: Lowest cost
+
+### Script Path
+
+- Witness Data: 3 elements (input + script + control block)
+- Transaction Size: ~234 bytes
+- Privacy Level: Partial privacy, only exposes used script branch
+- Verification Complexity: Control block verification + script execution
+- Fee Cost: Medium cost (~50% additional overhead)
 
 This **selective reveal** design enables Taproot to support various complex application scenarios: digital goods sales, bounty tasks, conditional escrow, multi-party contracts, etc., while maintaining maximum privacy when unused.
 

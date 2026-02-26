@@ -32,6 +32,8 @@ code-cryptofund/
 
 # Manuscript archive
 book/manuscript/archive/
+archive/
+book/leanpub-release/
 
 # ============================================================
 # Python

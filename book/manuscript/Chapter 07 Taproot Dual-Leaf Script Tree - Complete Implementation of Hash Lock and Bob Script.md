@@ -37,14 +37,14 @@ We will analyze the complete implementation of dual-leaf script trees based on t
 
 ### Transaction 1: Hash Script Path Spending
 
-- **Transaction ID**: `b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430`
-- **Taproot Address**: `tb1p93c4wxsr87p88jau7vru83zpk6xl0shf5ynmutd9x0gxwau3tngq9a4w3z`
+- **Transaction ID**: [`b61857a0...a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430)
+- **Taproot Address**: `tb1p93c4...9a4w3z`
 - **Spending Method**: Script Path (using preimage "helloworld")
 
 ### Transaction 2: Bob Script Path Spending
 
-- **Transaction ID**: `185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0`
-- **Taproot Address**: `tb1p93c4wxsr87p88jau7vru83zpk6xl0shf5ynmutd9x0gxwau3tngq9a4w3z`
+- **Transaction ID**: [`185024da...70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0)
+- **Taproot Address**: `tb1p93c4...9a4w3z`
 - **Spending Method**: Script Path (using Bob's private key signature)
 
 Note that these two transactions use the **exact same Taproot address**, proving they indeed originate from the same dual-leaf script tree!
@@ -95,7 +95,7 @@ def create_dual_leaf_taproot():
     return taproot_address, hash_script, bob_script
 
 # Actually generated address
-# Output: tb1p93c4wxsr87p88jau7vru83zpk6xl0shf5ynmutd9x0gxwau3tngq9a4w3z
+# Output: tb1p93c4...9a4w3z
 ```
 
 **Key Technical Details**:
@@ -110,7 +110,7 @@ After mastering the dual-leaf script tree construction principles, let's see how
 
 ### Hash Script Path Spending Core Code
 
-Based on transaction `b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430` implementation:
+Based on transaction `b61857a0...a2e430` implementation:
 
 ```python
 def hash_script_path_spending():
@@ -134,7 +134,10 @@ def hash_script_path_spending():
     taproot_address = alice_public.get_taproot_address(all_leafs)
 
     # Build transaction
-    txin = TxInput("f02c055369812944390ca6a232190ec0db83e4b1b623c452a269408bf8282d66", 0)
+    txin = TxInput(
+        "f02c055369812944390ca6a232190ec0db83e4b1b623c452a269408bf8282d66",
+        0
+    )
     txout = TxOutput(to_satoshis(0.00001034), alice_public.get_taproot_address().to_script_pub_key())
     tx = Transaction([txin], [txout], has_segwit=True)
 
@@ -159,7 +162,7 @@ def hash_script_path_spending():
 
 ### Bob Script Path Spending Core Code
 
-Based on transaction `185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0` implementation:
+Based on transaction `185024da...70cfe0` implementation:
 
 ```python
 def bob_script_path_spending():
@@ -182,7 +185,10 @@ def bob_script_path_spending():
     taproot_address = alice_public.get_taproot_address(all_leafs)
 
     # Build transaction
-    txin = TxInput("8caddfad76a5b3a8595a522e24305dc20580ca868ef733493e308ada084a050c", 1)
+    txin = TxInput(
+        "8caddfad76a5b3a8595a522e24305dc20580ca868ef733493e308ada084a050c",
+        1
+    )
     txout = TxOutput(to_satoshis(0.00000900), bob_public.get_taproot_address().to_script_pub_key())
     tx = Transaction([txin], [txout], has_segwit=True)
 
@@ -232,12 +238,12 @@ In dual-leaf script trees, each script's Control Block contains its sibling node
 **Data extracted from transaction b61857a0...**:
 
 ```
-Control Block: c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d32faaa677cb6ad6a74bf7025e4cd03d2a82c7fb8e3c277916d7751078105cf9df
+Control Block: c050be5f...8105cf9df
 
 Structure breakdown:
 ├─ c0: Leaf version (0xc0)
-├─ 50be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3: Alice internal pubkey
-└─ 2faaa677cb6ad6a74bf7025e4cd03d2a82c7fb8e3c277916d7751078105cf9df: Bob Script's TapLeaf hash
+├─ 50be5fc4...126bb4d3: Alice internal pubkey
+└─ 2faaa677...8105cf9df: Bob Script's TapLeaf hash
 ```
 
 ### Bob Script Path Control Block
@@ -245,12 +251,12 @@ Structure breakdown:
 **Data extracted from transaction 185024da...**:
 
 ```
-Control Block: c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3fe78d8523ce9603014b28739a51ef826f791aa17511e617af6dc96a8f10f659e
+Control Block: c050be5f...8f10f659e
 
 Structure breakdown:
 ├─ c0: Leaf version (0xc0)
-├─ 50be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3: Alice internal pubkey (same!)
-└─ fe78d8523ce9603014b28739a51ef826f791aa17511e617af6dc96a8f10f659e: Hash Script's TapLeaf hash
+├─ 50be5fc4...126bb4d3: Alice internal pubkey (same!)
+└─ fe78d852...8f10f659e: Hash Script's TapLeaf hash
 ```
 
 **Important Observations**:
@@ -268,12 +274,24 @@ def verify_control_block_and_address_reconstruction():
     """Verify Control Block and reconstruct Taproot address"""
 
     # Hash Script Path data
-    hash_control_block = "c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d32faaa677cb6ad6a74bf7025e4cd03d2a82c7fb8e3c277916d7751078105cf9df"
-    hash_script_hex = "a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af8851"
+    hash_control_block = (
+        "c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3"
+        "2faaa677cb6ad6a74bf7025e4cd03d2a82c7fb8e3c277916d7751078105cf9df"
+    )
+    hash_script_hex = (
+        "a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af"
+        "8851"
+    )
 
     # Bob Script Path data
-    bob_control_block = "c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3fe78d8523ce9603014b28739a51ef826f791aa17511e617af6dc96a8f10f659e"
-    bob_script_hex = "2084b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5ac"
+    bob_control_block = (
+        "c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3"
+        "fe78d8523ce9603014b28739a51ef826f791aa17511e617af6dc96a8f10f659e"
+    )
+    bob_script_hex = (
+        "2084b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5"
+        "ac"
+    )
 
     # Parse Control Block structure
     def parse_control_block(cb_hex):
@@ -291,21 +309,21 @@ def verify_control_block_and_address_reconstruction():
     bob_version, bob_parity, bob_internal_key, bob_sibling = parse_control_block(bob_control_block)
 
     print("Control Block verification:")
-    print(f"✅ Internal pubkey consistent: {hash_internal_key == bob_internal_key}")
-    print(f"✅ Alice internal pubkey: {hash_internal_key.hex()}")
+    print(f"[OK] Internal pubkey consistent: {hash_internal_key == bob_internal_key}")
+    print(f"[OK] Alice internal pubkey: {hash_internal_key.hex()}")
 
     # Calculate respective TapLeaf hashes
     hash_tapleaf = tagged_hash("TapLeaf", bytes([hash_version]) + bytes([len(bytes.fromhex(hash_script_hex))]) + bytes.fromhex(hash_script_hex))
     bob_tapleaf = tagged_hash("TapLeaf", bytes([bob_version]) + bytes([len(bytes.fromhex(bob_script_hex))]) + bytes.fromhex(bob_script_hex))
 
     print(f"\nTapLeaf hash calculation:")
-    print(f"✅ Hash Script TapLeaf: {hash_tapleaf.hex()}")
-    print(f"✅ Bob Script TapLeaf:  {bob_tapleaf.hex()}")
+    print(f"[OK] Hash Script TapLeaf: {hash_tapleaf.hex()}")
+    print(f"[OK] Bob Script TapLeaf:  {bob_tapleaf.hex()}")
 
     # Verify sibling node relationship
     print(f"\nSibling node verification:")
-    print(f"✅ Hash Script's sibling is Bob TapLeaf: {hash_sibling.hex() == bob_tapleaf.hex()}")
-    print(f"✅ Bob Script's sibling is Hash TapLeaf: {bob_sibling.hex() == hash_tapleaf.hex()}")
+    print(f"[OK] Hash Script's sibling is Bob TapLeaf: {hash_sibling.hex() == bob_tapleaf.hex()}")
+    print(f"[OK] Bob Script's sibling is Hash TapLeaf: {bob_sibling.hex() == hash_tapleaf.hex()}")
 
     # Calculate Merkle Root
     # Sort lexicographically then calculate TapBranch
@@ -315,17 +333,20 @@ def verify_control_block_and_address_reconstruction():
         merkle_root = tagged_hash("TapBranch", bob_tapleaf + hash_tapleaf)
 
     print(f"\nMerkle Root calculation:")
-    print(f"✅ Calculated Merkle Root: {merkle_root.hex()}")
+    print(f"[OK] Calculated Merkle Root: {merkle_root.hex()}")
 
     # Calculate output pubkey tweak
     tweak = tagged_hash("TapTweak", hash_internal_key + merkle_root)
-    print(f"✅ Tweak value: {tweak.hex()}")
+    print(f"[OK] Tweak value: {tweak.hex()}")
 
     # Address reconstruction (simplified concept display)
-    target_address = "tb1p93c4wxsr87p88jau7vru83zpk6xl0shf5ynmutd9x0gxwau3tngq9a4w3z"
+    target_address = (
+        "tb1p93c4wxsr87p88jau7vru83zpk6xl0shf5ynmutd9x0gxwau3tng"
+        "q9a4w3z"
+    )
     print(f"\nAddress verification:")
-    print(f"✅ Target address: {target_address}")
-    print(f"✅ Control Block valid: Can reconstruct same address")
+    print(f"[OK] Target address: {target_address}")
+    print(f"[OK] Control Block valid: Can reconstruct same address")
 
     return True
 
@@ -340,14 +361,14 @@ Now let's analyze the complete execution process of Hash Script Path in detail. 
 
 ```
 Witness Stack:
-[0] 68656c6c6f776f726c64                                                     (preimage_hex)
-[1] a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af8851   (script_hex)
-[2] c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d32faaa677cb6ad6a74bf7025e4cd03d2a82c7fb8e3c277916d7751078105cf9df (control_block)
+[0] 68656c6c6f776f726c64                             (preimage_hex)
+[1] a820936a...f8f8f07af8851                         (script_hex)
+[2] c050be5f...8105cf9df                             (control_block)
 ```
 
 ### Script Bytecode Parsing
 
-**Hash Script**: `a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af8851`
+**Hash Script**: `a820936a...f8f8f07af8851`
 
 ```
 Bytecode breakdown:
@@ -360,7 +381,7 @@ a8 = OP_SHA256
 
 ### Stack Execution Animation - Hash Script Path
 
-**Executing script**: `OP_SHA256 OP_PUSHBYTES_32 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af OP_EQUALVERIFY OP_PUSHNUM_1`
+**Executing script**: `OP_SHA256 OP_PUSHBYTES_32 <expected_hash_32bytes> OP_EQUALVERIFY OP_PUSHNUM_1`
 
 #### 0. Initial state: Load script input
 
@@ -374,8 +395,8 @@ a8 = OP_SHA256
 #### 1. OP_SHA256: Calculate SHA256 hash of top stack element
 
 ```
-| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af (computed_hash) |
-└─────────────────────────────────────────────────────────────────────────────────────┘
+| 936a185c...f8f8f07af (computed_hash) |
+└───────────────────────────────────────┘
 ```
 
 **(SHA256("helloworld") = 936a185c...07af)**
@@ -383,9 +404,9 @@ a8 = OP_SHA256
 #### 2. OP_PUSHBYTES_32: Push expected hash value
 
 ```
-| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af (expected_hash) |
-| 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af (computed_hash) |
-└─────────────────────────────────────────────────────────────────────────────────────┘
+| 936a185c...f8f8f07af (expected_hash) |
+| 936a185c...f8f8f07af (computed_hash) |
+└───────────────────────────────────────┘
 ```
 
 **(Two identical hash values now at stack top)**
@@ -416,14 +437,14 @@ Next, let's analyze Bob Script Path execution process. Based on actual data from
 
 ```
 Witness Stack:
-[0] 26a0eadca0bba3d1bb6f82b8e1f76e2d84038c97a92fa95cc0b9f6a6a59bac5f9977d7cb33dbd188b1b84e6d5a9447231353590578f358b2f18a66731f9f1c5c (bob_signature)
-[1] 2084b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5ac                                                               (script_hex)
-[2] c050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3fe78d8523ce9603014b28739a51ef826f791aa17511e617af6dc96a8f10f659e   (control_block)
+[0] 26a0eadc...31f9f1c5c                            (bob_signature)
+[1] 2084b595...ceef63af5ac                          (script_hex)
+[2] c050be5f...8f10f659e                            (control_block)
 ```
 
 ### Script Bytecode Parsing
 
-**Bob Script**: `2084b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5ac`
+**Bob Script**: `2084b595...ceef63af5ac`
 
 ```
 Bytecode breakdown:
@@ -434,13 +455,13 @@ ac = OP_CHECKSIG
 
 ### Stack Execution Animation - Bob Script Path
 
-**Executing script**: `OP_PUSHBYTES_32 84b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5 OP_CHECKSIG`
+**Executing script**: `OP_PUSHBYTES_32 <bob_xonly_pubkey> OP_CHECKSIG`
 
 #### 0. Initial state: Load script input
 
 ```
-| 26a0eadca0bba3d1bb6f82b8e1f76e2d84038c97a92fa95cc0b9f6a6a59bac5f9977d7cb33dbd188b1b84e6d5a9447231353590578f358b2f18a66731f9f1c5c (bob_signature) |
-└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+| 26a0eadc...31f9f1c5c (bob_signature) |
+└───────────────────────────────────────┘
 ```
 
 **(Bob's 64-byte Schnorr signature already on stack)**
@@ -448,9 +469,9 @@ ac = OP_CHECKSIG
 #### 1. OP_PUSHBYTES_32: Push Bob's x-only pubkey
 
 ```
-| 84b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5 (bob_pubkey)   |
-| 26a0eadca0bba3d1bb6f82b8e1f76e2d84038c97a92fa95cc0b9f6a6a59bac5f9977d7cb33dbd188b1b84e6d5a9447231353590578f358b2f18a66731f9f1c5c (bob_signature) |
-└───────────────────────────────────────────────────────────────────────────────────┘
+| 84b59516...ceef63af5 (bob_pubkey)      |
+| 26a0eadc...31f9f1c5c (bob_signature)   |
+└────────────────────────────────────────┘
 ```
 
 **(Bob's 32-byte x-only pubkey pushed to stack top)**
@@ -466,8 +487,8 @@ ac = OP_CHECKSIG
 
 **Verification Process Details**:
 
-1. Pop pubkey from stack: `84b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5`
-2. Pop signature from stack: `26a0eadca0bba3d1bb6f82b8e1f76e2d84038c97a92fa95cc0b9f6a6a59bac5f...`
+1. Pop pubkey from stack: `84b59516...ceef63af5`
+2. Pop signature from stack: `26a0eadc...31f9f1c5c`
 3. Use BIP340 Schnorr signature verification algorithm to verify signature validity
 4. Verification successful, push 1 to indicate TRUE
 
@@ -563,11 +584,11 @@ def spend_script_path(script_index, input_data, leafs, internal_key, taproot_add
 **Script Index Errors**:
 
 ```python
-# ❌ Error: Control Block script index doesn't match actually used script
+# [Wrong] Error: Control Block script index doesn't match actually used script
 control_block = ControlBlock(..., leafs, 1, ...)  # Index 1
 witness = [..., leafs[0].to_hex(), ...]           # But using index 0 script
 
-# ✅ Correct: Ensure index consistency
+# [Correct] Ensure index consistency
 script_index = 1
 control_block = ControlBlock(..., leafs, script_index, ...)
 witness = [..., leafs[script_index].to_hex(), ...]
@@ -590,11 +611,36 @@ def debug_control_block(control_block_hex, script_hex, expected_sibling):
 
 Through actual on-chain data, we can quantitatively analyze performance and privacy characteristics of different spending methods:
 
-| Spending Method | Transaction Size | Witness Data | Computational Complexity | Privacy Level | Relative Fee Cost |
-|-----------------|------------------|--------------|-------------------------|---------------|-------------------|
-| **Key Path** | ~110 bytes | 64-byte signature | 1 signature verification | Complete privacy | Baseline (1.0x) |
-| **Hash Script** | ~180 bytes | preimage+script+cb | Hash calculation+Merkle verification | Exposes Hash Lock | Medium (1.6x) |
-| **Bob Script** | ~185 bytes | signature+script+cb | Signature verification+Merkle verification | Exposes P2PK structure | Medium (1.7x) |
+### Size and Witness Comparison
+
+- **Key Path**
+  - Transaction Size: ~110 bytes
+  - Witness Data: `64-byte signature`
+
+- **Hash Script**
+  - Transaction Size: ~180 bytes
+  - Witness Data: `preimage + script + control_block`
+
+- **Bob Script**
+  - Transaction Size: ~185 bytes
+  - Witness Data: `signature + script + control_block`
+
+### Verification, Privacy, and Fee Comparison
+
+- **Key Path**
+  - Verification Complexity: 1 signature verification
+  - Privacy Level: Complete privacy
+  - Relative Fee Cost: Baseline (1.0x)
+
+- **Hash Script**
+  - Verification Complexity: Hash calculation + Merkle verification
+  - Privacy Level: Exposes Hash Lock
+  - Relative Fee Cost: Medium (1.6x)
+
+- **Bob Script**
+  - Verification Complexity: Signature verification + Merkle verification
+  - Privacy Level: Exposes P2PK structure
+  - Relative Fee Cost: Medium (1.7x)
 
 **Key Insights**:
 

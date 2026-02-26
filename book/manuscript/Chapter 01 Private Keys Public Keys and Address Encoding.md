@@ -6,8 +6,8 @@ Understanding Bitcoin's cryptographic foundation is essential before diving into
 
 Bitcoin's security model relies on a one-way mathematical relationship between private keys, public keys, and addresses:
 
-```
-Private Key (256-bit) → Public Key (ECDSA point) → Address (encoded hash)
+```text
+Private Key (256-bit) -> Public Key (ECDSA point) -> Address (encoded hash)
 
 ```
 
@@ -127,16 +127,15 @@ public_key_compressed = key.public_hex          # 33 bytes
 public_key_uncompressed = key.public_uncompressed_hex  # 65 bytes
 
 print(f"Compressed:   {public_key_compressed}")
-print(f"Uncompressed: {public_key_uncompressed[:70]}...") 
-# Truncated for display
+print(f"Uncompressed: {public_key_uncompressed}") 
 
 ```
 
 **Example output:**
 
 ```
-Compressed:   0250be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3
-Uncompressed: 0450be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3...
+Compressed:   0250be5f...d126bb4d3
+Uncompressed: 0450be5f...03162a90
 
 ```
 
@@ -259,9 +258,9 @@ Taproot addresses use Bech32m, an improved version of Bech32:
 
 While address encoding involves many subtle rules—like version bytes, checksums, and different encodings (Base58Check, Bech32, Bech32m)—it’s more important to understand the general idea:
 
-👉 addresses are for humans. They’re just a user-friendly representation of locking scripts (scriptPubKey), not a required component of the protocol itself.
+Addresses are for humans. They’re just a user-friendly representation of locking scripts (scriptPubKey), not a required component of the protocol itself.
 
-Once you recognize the prefix (1, 3, bc1q, bc1p), you already know what kind of script is behind it.From the node’s perspective, Bitcoin never stores addresses—only scripts.
+Once you recognize the prefix (1, 3, bc1q, bc1p), you already know what kind of script is behind it. From the node’s perspective, Bitcoin never stores addresses—only scripts.
 
 
 In later chapters, we’ll focus on what truly matters: the actual scriptPubKey associated with each address type. That’s where the real logic lives—and where Bitcoin’s scripting and programmability begin. If you can predict the script behind the address, you can reason about how it’s spent.
@@ -314,4 +313,4 @@ This chapter established the cryptographic foundation for Bitcoin transactions:
 - Different address types use different encoding schemes: Base58Check, Bech32, and Bech32m
 - Taproot introduces x-only public keys and Bech32m encoding for enhanced efficiency
 
-All the components introduced here—keys, hashes, encodings—are what Bitcoin Script ultimately manipulates or validates.In the next chapter, we'll explore how these keys and addresses interact with Bitcoin Script—the programming language that defines spending conditions and enables Taproot's advanced capabilities.
+All the components introduced here—keys, hashes, encodings—are what Bitcoin Script ultimately manipulates or validates. In the next chapter, we'll explore how these keys and addresses interact with Bitcoin Script—the programming language that defines spending conditions and enables Taproot's advanced capabilities.

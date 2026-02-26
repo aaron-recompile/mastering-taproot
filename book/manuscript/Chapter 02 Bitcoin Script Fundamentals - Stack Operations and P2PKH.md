@@ -49,13 +49,10 @@ Let's trace a simple transaction between Alice and Bob:
 
 ### Key UTXO Properties
 
-**Complete Consumption**: UTXOs must be spent in their entirety—no partial spending.
-
-**Atomic Creation**: Transactions either succeed completely (all inputs consumed, all outputs created) or fail completely.
-
-**Change Handling**: Any difference between input and output amounts becomes the transaction fee, unless explicitly returned as change.
-
-**Parallel Processing**: Since each UTXO can only be spent once, multiple transactions can be validated in parallel without complex state management.
+- **Complete Consumption**: UTXOs must be spent in their entirety - no partial spending.
+- **Atomic Creation**: Transactions either succeed completely (all inputs consumed, all outputs created) or fail completely.
+- **Change Handling**: Any difference between input and output amounts becomes the transaction fee, unless explicitly returned as change.
+- **Parallel Processing**: Since each UTXO can only be spent once, multiple transactions can be validated in parallel without complex state management.
 
 ## 2.2 Bitcoin Script and P2PKH Fundamentals
 
@@ -66,7 +63,7 @@ Each UTXO doesn't just contain an amount—it contains a **locking script** (Scr
 ### Script Architecture
 
 ```
-Unlocking Script (ScriptSig) + Locking Script (ScriptPubKey) → Valid/Invalid
+Unlocking Script (ScriptSig) + Locking Script (ScriptPubKey) -> Valid/Invalid
 
 ```
 
@@ -160,7 +157,7 @@ The spender provides:
 
 Let's examine the famous first Bitcoin transaction: Satoshi Nakamoto sending 10 BTC to Hal Finney.
 
-**Transaction ID**: [`f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16`](https://mempool.space/tx/f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16)
+**Transaction ID**: [`f4184fc5...1e9e16`](https://mempool.space/tx/f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16)
 
 **Transaction Structure**:
 
@@ -353,17 +350,29 @@ if __name__ == "__main__":
 
 Let's analyze the actual data from our transaction execution. When this code runs, it produces a real transaction that was broadcast to testnet:
 
-**Transaction ID**: [`bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355`](https://mempool.space/testnet/tx/bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355)
+**Transaction ID**: [`bf41b474...8e58355`](https://mempool.space/testnet/tx/bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355)
 
 **Raw Transaction Data**:
 
-`0100000001f7061814e7b778978ccb9193559a7832c733655302d2bef3d7f9eca9d0150ab9010000006a473044022055c309fe3f6099f4f881d0fd960923eb91aff0d8ef3501a2fc04dce99aca609d0220174b9aec4fc22f6f81b637bbafec9554e497ec2d9f3ca4992ee4209dd047443d012102898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519ffffffff01c8720000000000001600148c7bf2dd2b38b5ed13c3b24ceebf2e7ae30a47df00000000`
+```text
+0200000001f7061814e7b778978ccb919355a97832c7336553d2bed7f39feca9
+d0150ab934010000006a473044022055c309fe3f6099f4f881d0fd960923eb91af
+f0d8ef3501a2fc04dce99aca609d0220174b9aec4fc22f6f81b637bbafec9554e4
+97ec2d9f3ca4992ee4209dd047443d012102898711e6bf63f5cbe1b38c05e89d6c
+391c59e9f8f695da44bf3d20ca674c8519ffffffff01d872000000000000160014
+c5b28d6bba91a2693a9b1876bcd3929323890fb200000000
+```
 
 Let's break down the unlocking script (ScriptSig) and trace through its execution:
 
 **Unlocking Script (ScriptSig)**:
 
-`473044022055c309fe3f6099f4f881d0fd960923eb91aff0d8ef3501a2fc04dce99aca609d0220174b9aec4fc22f6f81b637bbafec9554e497ec2d9f3ca4992ee4209dd047443d012102898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519`
+```text
+473044022055c309fe3f6099f4f881d0fd960923eb91aff0d8ef3501a2fc04dce
+99aca609d0220174b9aec4fc22f6f81b637bbafec9554e497ec2d9f3ca4992ee4
+209dd047443d012102898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44
+bf3d20ca674c8519
+```
 
 **Parsed Components**:
 
@@ -475,7 +484,7 @@ Result: SUCCESS (non-zero value on stack)
 ### Transaction Broadcast Result
 
 This transaction was successfully broadcast to the Bitcoin testnet and can be viewed at:
-https://mempool.space/testnet/tx/bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355
+[`mempool.space/testnet/tx/bf41b474...8e58355`](https://mempool.space/testnet/tx/bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355)
 
 **Key Observations**:
 
