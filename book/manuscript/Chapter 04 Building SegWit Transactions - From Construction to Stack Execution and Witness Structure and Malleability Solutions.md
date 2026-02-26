@@ -33,7 +33,7 @@ SegWit Transaction Structure:
 ┌─────────────────────────────────────────┐
 │        Witness Data (Separated)         │  } Committed separately
 │    ┌─────────────────────────────────┐  │
-│    │ Signature │ Public Key         │  │  (For P2WPKH)
+│    │ Signature │ Public Key          │  │  (For P2WPKH)
 │    └─────────────────────────────────┘  │
 └─────────────────────────────────────────┘
 ```
@@ -329,7 +329,7 @@ Bitcoin Core recognizes the OP_0 <20-bytes> pattern and executes P2WPKH as equiv
 
 **Initial State:**
 ```
-│ (empty)                                  │
+│ (empty)                                 │
 └─────────────────────────────────────────┘
 ```
 
@@ -345,7 +345,7 @@ Bitcoin Core recognizes the OP_0 <20-bytes> pattern and executes P2WPKH as equiv
 
 #### 2a. OP_0: Push witness version
 ```
-│ 00 (witness_version)                     │
+│ 00 (witness_version)                    │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
@@ -353,8 +353,8 @@ Bitcoin Core recognizes the OP_0 <20-bytes> pattern and executes P2WPKH as equiv
 
 #### 2b. PUSH PubKey Hash: Expected hash from script
 ```
-│ c5b28d6bba91...890fb2 (expected_hash)  │
-│ 00 (witness_version)                     │
+│ c5b28d6bba91...890fb2 (expected_hash)   │
+│ 00 (witness_version)                    │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
@@ -394,7 +394,7 @@ This pattern recognition framework is what enables Taproot's OP_1 programs—the
 
 #### 3b. OP_HASH160: Hash public key
 ```
-│ c5b28d6bba91...890fb2 (computed_hash)  │
+│ c5b28d6bba91...890fb2 (computed_hash)   │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
@@ -404,8 +404,8 @@ In BIP143, the P2WPKH scriptCode used in the signature message is exactly the P2
 
 #### 3c. PUSH Expected Hash: From witness program
 ```
-│ c5b28d6bba91...890fb2 (expected_hash)  │
-│ c5b28d6bba91...890fb2 (computed_hash)  │
+│ c5b28d6bba91...890fb2 (expected_hash)   │
+│ c5b28d6bba91...890fb2 (computed_hash)   │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
@@ -421,7 +421,7 @@ In BIP143, the P2WPKH scriptCode used in the signature message is exactly the P2
 
 #### 3e. OP_CHECKSIG: Final signature verification
 ```
-│ 1 (TRUE)                                 │
+│ 1 (TRUE)                                │
 └─────────────────────────────────────────┘
 ```
 **(ECDSA signature verification against transaction data ✓)**

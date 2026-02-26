@@ -53,7 +53,7 @@ Consider a blockchain startup with three key stakeholders:
 - **Bob**: CTO with technical oversight  
 - **Carol**: CFO with financial controls
 
-Their treasury policy requires any two signatures for fund movement, preventing both single-person risk and requiring unanimous consensus.
+Their treasury policy requires any two signatures for fund movement, preventing both single-person risk and requiring authorization by a majority of the stakeholders.
 
 ### Multi-signature Script Construction
 

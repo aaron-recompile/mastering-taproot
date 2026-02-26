@@ -19,7 +19,7 @@ Each step in this hierarchy serves a specific purpose:
 
 ## Private Keys: The Foundation of Ownership
 
-A Bitcoin private key is fundamentally a 256-bit random number—a massive integer that serves as the secret foundation of cryptocurrency ownership. To put this in perspective, the total number of possible private keys (2^256) exceeds the estimated number of atoms in the observable universe.
+A Bitcoin private key is fundamentally a 256-bit random number—a massive integer that serves as the secret foundation of cryptocurrency ownership. To put this in perspective, the total number of possible private keys (2^256) is comparable to the estimated number of atoms in the observable universe.
 
 ### Generating Private Keys
 
@@ -61,7 +61,7 @@ The Wallet Import Format (WIF) addresses the usability challenges of raw hexadec
 The WIF encoding process follows these steps:
 
 1. **Add version prefix**: `0x80` for mainnet, `0xEF` for testnet
-2. **(Optional) Add compression flag**: If the corresponding public key will be compressed, append 0x01 to the payload,This step changes the final Base58 prefix of the WIF
+2. **(Optional) Add compression flag**: If the corresponding public key will be compressed, append `0x01` to the payload. This step changes the final Base58 prefix of the WIF
 2. **Calculate checksum**: Apply SHA256(SHA256(data)) and take first 4 bytes
 3. **Apply Base58 encoding**: Convert to human-readable format
 
@@ -127,8 +127,7 @@ public_key_compressed = key.public_hex          # 33 bytes
 public_key_uncompressed = key.public_uncompressed_hex  # 65 bytes
 
 print(f"Compressed:   {public_key_compressed}")
-print(f"Uncompressed: {public_key_uncompressed[:70]}...") 
-# Truncated for display
+print(f"Uncompressed: {public_key_uncompressed}") 
 
 ```
 
@@ -136,7 +135,7 @@ print(f"Uncompressed: {public_key_uncompressed[:70]}...")
 
 ```
 Compressed:   0250be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3
-Uncompressed: 0450be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3...
+Uncompressed: 0450be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d36dbc816fe21ba41dfa6e6a92d0ccd62240b8a9eaa87d508b2ee330ef03162a90
 
 ```
 
@@ -261,7 +260,7 @@ While address encoding involves many subtle rules—like version bytes, checksum
 
 👉 addresses are for humans. They’re just a user-friendly representation of locking scripts (scriptPubKey), not a required component of the protocol itself.
 
-Once you recognize the prefix (1, 3, bc1q, bc1p), you already know what kind of script is behind it.From the node’s perspective, Bitcoin never stores addresses—only scripts.
+Once you recognize the prefix (1, 3, bc1q, bc1p), you already know what kind of script is behind it. From the node’s perspective, Bitcoin never stores addresses—only scripts.
 
 
 In later chapters, we’ll focus on what truly matters: the actual scriptPubKey associated with each address type. That’s where the real logic lives—and where Bitcoin’s scripting and programmability begin. If you can predict the script behind the address, you can reason about how it’s spent.
@@ -314,4 +313,4 @@ This chapter established the cryptographic foundation for Bitcoin transactions:
 - Different address types use different encoding schemes: Base58Check, Bech32, and Bech32m
 - Taproot introduces x-only public keys and Bech32m encoding for enhanced efficiency
 
-All the components introduced here—keys, hashes, encodings—are what Bitcoin Script ultimately manipulates or validates.In the next chapter, we'll explore how these keys and addresses interact with Bitcoin Script—the programming language that defines spending conditions and enables Taproot's advanced capabilities.
+All the components introduced here—keys, hashes, encodings—are what Bitcoin Script ultimately manipulates or validates. In the next chapter, we'll explore how these keys and addresses interact with Bitcoin Script—the programming language that defines spending conditions and enables Taproot's advanced capabilities.
