@@ -117,40 +117,40 @@ Formally (BIP341):
 ```
 t  = int(HashTapTweak(xonly_internal_key || merkle_root_or_empty)) mod n
 
-P' = P + t * G
+Q = P + t * G
 d' = d + t
 ```
 **Even-Y requirement (BIP340):**  
 Taproot uses x-only public keys — but the actual point on secp256k1 still has two possible y values (even / odd).  
-The BIP340 rule is: the final tweaked output key **must correspond to an even-y point**.  
-If the point ends up odd-y, implementations flip the private key to `d' = n − d'` so that `P' = d'*G` lands on the even branch.
+The BIP340 rule is: the final tweaked output key **must be derived from an even-y point public key**.  
+If the point ends up odd-y, implementations flip the private key to `d = n − d'` so that `P = d*G` lands on the even branch, and then the subsequent Output key (Q) can be derived from that point.
 
 (Why this matters later: in script-path spending this parity is encoded into the control block's lowest bit. If you don’t track this now, script-path won’t verify later.)
 
 ### Visual Representation of Key Tweaking Structure
 
 ```
-Internal Key (P) ─────────► + tweak ─────────► Output Key (P')
-                              ▲                      │
-                              │                      │
-                       Merkle Root ◄─────────────────┘
+Internal Key (P) ─────────► + tweak ─────────► Output Key (Q)
+                              ▲                      
+                              │                      
+                       Merkle Root 
                     script_path_commitment
 ```
 
 **Key Relationship Diagram:**
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Internal Key  │    │   Tweak Value   │    │   Output Key    │
-│       (P)       │    │   t = H(P||M)   │    │      (P')       │
+│ Internal PubKey │    │   Tweak Value   │    │   Output Key    │
+│       (P)       │    │   t = H(P||M)   │    │      (Q)       │
 │                 │───►│                 │───►│                 │
-│ User's original │    │ Deterministic   │    │ Final address   │
+│ From original   │    │ Deterministic   │    │ Final address   │
 │ private key     │    │ from commit     │    │ seen on chain   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-        │                        ▲                        │
-        │                        │                        │
-        └─── Can compute d' ─────┘                        │
-                                                          │
-                                 ┌────────────────────────┘
+                                                           │
+                                                           │
+                                                           │
+                                                           │
+                                 ┌─────────────────────────┘
                                  │
                                  ▼
                       ┌─────────────────┐
@@ -164,16 +164,15 @@ Internal Key (P) ─────────► + tweak ────────
 ```
 
 Where:
-- `P` = **Internal Key** (original public key, user controls)
+- `P` = **Internal PubKey** (original public key, user controls)
 - `M` = **Merkle Root** (commitment to all possible spending conditions)
 - `t` = **Tweak Value** (deterministic from P and M)
-- `P'` = **Output Key** (final Taproot address, appears on blockchain)
-- `d'` = **Tweaked Private Key** (for key path spending)
+- `Q` = **Output Key** (final Taproot address, appears on blockchain)
 
 This mathematical relationship ensures that:
-1. **Anyone can compute P'** from P and the commitment（Given the internal key P and (optional) Merkle root M）
-2. **Only the key holder can compute d'** from d and the tweak
-3. **The relationship d' * G = P'** is maintained (signature verification works)
+1. **Anyone can compute Q** from P and the commitment（Given the internal pubkey P and (optional) Merkle root M）
+2. **Only the key holder can compute the tweaked private key** from d and the tweak
+3. **The relationship tweaked_d × G = Q** is maintained (signature verification works)
 
 ### Practical Key Tweaking Implementation
 
@@ -214,10 +213,31 @@ def demonstrate_key_tweaking():
     print(f"Tweak Integer: {tweak_int}")
     
     # Step 4: Apply tweaking formula
+    #Generate tweak point t * G
+    t_Point: Point = tweak_int * G
+    #Generate internal point d * G
+    ## ##First get integer version of private key
     internal_privkey_int = int.from_bytes(internal_private_key.to_bytes(), 'big')
-    curve_order = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
-    tweaked_privkey_int = (internal_privkey_int + tweak_int) % curve_order
+    ## ## Then multiply that private key by G to get the public key. Essentially doing the same as what internal_private_key.get_public_key() did above
+    P: Point = internal_privkey_int * G
     
+    ## Evaluating whether the original point P has an even Y or an odd one.
+    curve_order = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+    
+    if P.y.num % 2 == 0:
+        negated_d = internal_privkey_int
+    else:
+        negated_d = curve_order - internal_privkey_int
+        #Update the public key to be negated d * G so as to give the even Y coordinate
+        P = negated_d * G
+    
+    #Add tweak point to the even Public key
+    Q = P + t_Point
+
+    #Now applying tweak to original secret key after making sure it gives an even Y coordinate above
+    tweaked_privkey_int = (negated_d + tweak_int) % curve_order
+    
+    # Create tweaked private key from the integer
     tweaked_private_key = PrivateKey.from_bytes(tweaked_privkey_int.to_bytes(32, 'big'))
     tweaked_public_key = tweaked_private_key.get_public_key()
     
@@ -226,14 +246,14 @@ def demonstrate_key_tweaking():
     print(f"Tweaked Private Key:  {tweaked_privkey_int}")
     print(f"Private Key Change:   +{tweak_int}")
     print(f"")
-    print(f"Original Public Key:  {internal_public_key.to_hex()}")
-    print(f"Tweaked Public Key:   {tweaked_public_key.to_hex()}")
-    print(f"Public Key (x-only):  {tweaked_public_key.to_hex()[2:]}")
+    print(f"Original (P):  {P.export_pubkey().hex()}")
+    print(f"Tweaked (Q):  {Q.export_pubkey().hex()}")
+    print(f"Public Key (x-only):  {Q.export_pubkey(taproot=True).hex()}")
     
     # Step 5: Verify the mathematical relationship
     print(f"\n=== STEP 5: Mathematical Verification ===")
-    print(f"d' * G = P'? {tweaked_private_key.get_public_key().to_hex() == tweaked_public_key.to_hex()}")
-    print(f"Anyone can compute P' from P and commitment: ✓")
+    print(f"d' × G = Q? {tweaked_private_key.get_public_key().to_hex() == Q.export_pubkey().hex()}")
+    print(f"Anyone can compute Q from P and commitment: ✓")
     print(f"Only key holder can compute d' from d and tweak: ✓")
     
     return {
@@ -568,7 +588,7 @@ Taproot represents a paradigm shift in Bitcoin transactions through two key math
 
 **Schnorr Signatures**: The linearity property enables key aggregation,single-signature output, and most importantly, key tweaking. This creates fixed 64-byte signatures that can represent any level of complexity while looking identical.
 
-**Key Tweaking (Tweakable Commitment)**: The mathematical relationship `P' = P + t*G` allows keys to be deterministically modified with script commitments, creating dual spending paths while maintaining cryptographic security.
+**Key Tweaking (Tweakable Commitment)**: The mathematical relationship `Q = P + t×G` allows keys to be deterministically modified with script commitments, creating dual spending paths while maintaining cryptographic security.
 
 **The Result**: Complex smart contracts become **computationally and observationally identical** to simple payments, providing unprecedented privacy without sacrificing functionality.
 

@@ -5,7 +5,7 @@ This script demonstrates the key tweaking process that enables Taproot:
 - Internal key generation
 - Script commitment (empty for key-path-only)
 - Tweak calculation using BIP341 formula
-- Tweaking application (P' = P + t×G, d' = d + t)
+- Tweaking application (Q = P + t×G, d' = d + t)
 - Mathematical verification
 
 Reference: Chapter 5, Section "Key Tweaking: The Bridge to Taproot" (lines 178-249)
@@ -13,6 +13,7 @@ Reference: Chapter 5, Section "Key Tweaking: The Bridge to Taproot" (lines 178-2
 
 from bitcoinutils.setup import setup
 from bitcoinutils.keys import PrivateKey
+from ecc import *
 import hashlib
 
 def demonstrate_key_tweaking():
@@ -59,10 +60,30 @@ def demonstrate_key_tweaking():
     
     # Step 4: Apply tweaking formula
     # d' = d + t (mod n)
-    # P' = P + t×G = d'×G
+    # Q = P + t×G = d'×G
+    #Generate tweak point t * G
+    t_Point: Point = tweak_int * G
+    #Generate internal point d * G
+    ## ##First get integer version of private key
     internal_privkey_int = int.from_bytes(internal_private_key.to_bytes(), 'big')
+    ## ## Then multiply that private key by G to get the public key. Essentially doing the same as what internal_private_key.get_public_key() did above
+    P: Point = internal_privkey_int * G
+    
+    ## Evaluating whether the original point P has an even Y or an odd one.
     curve_order = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
-    tweaked_privkey_int = (internal_privkey_int + tweak_int) % curve_order
+    
+    if P.y.num % 2 == 0:
+        negated_d = internal_privkey_int
+    else:
+        negated_d = curve_order - internal_privkey_int
+        #Update the public key to be negated d * G so as to give the even Y coordinate
+        P = negated_d * G
+    
+    #Add tweak point to the even Public key
+    Q = P + t_Point
+
+    #Now applying tweak to original secret key after making sure it gives an even Y coordinate above
+    tweaked_privkey_int = (negated_d + tweak_int) % curve_order
     
     # Create tweaked private key from the integer
     tweaked_private_key = PrivateKey.from_bytes(tweaked_privkey_int.to_bytes(32, 'big'))
@@ -70,40 +91,42 @@ def demonstrate_key_tweaking():
     
     print(f"\n=== STEP 4: Tweaking Application ===")
     print(f"Formula for Private Key: d' = d + t (mod n)")
-    print(f"Formula for Public Key:  P' = P + t×G = d'×G")
+    print(f"Formula for Public Key:  Q = P + t×G = d'×G")
     print(f"")
     print(f"Where:")
     print(f"  d  = original private key (internal)")
     print(f"  d' = tweaked private key (output)")
     print(f"  t  = tweak value (from Step 3)")
     print(f"  P  = original public key (internal)")
-    print(f"  P' = tweaked public key (output)")
+    print(f"  Q = tweaked public key (output)")
     print(f"  G  = generator point on secp256k1 curve")
     print(f"  n  = curve order")
     print(f"")
     print(f"Private Key Transformation:")
-    print(f"  Original (d):  {internal_privkey_int}")
+    print(f"  Original (d):  {negated_d}")
+    print(f"  The original P point had an even Y coordinate... y(P) % 2 == 0 ? {P.y.num % 2 == 0}")
     print(f"  Tweak (t):     +{tweak_int}")
     print(f"  ─────────────────────────────────────────────")
     print(f"  Tweaked (d'):  {tweaked_privkey_int}")
     print(f"  (mod n: {curve_order})")
     print(f"")
     print(f"Public Key Transformation:")
-    print(f"  Original (P):  {internal_public_key.to_hex()}")
-    print(f"  Tweaked (P'):  {tweaked_public_key.to_hex()}")
-    print(f"  Output Key (x-only): {tweaked_public_key.to_hex()[2:]}")
+    print(f"  Original (P):  {P.export_pubkey().hex()}")
+    print(f"  Tweaked (Q):  {Q.export_pubkey().hex()}")
+    print(f"  Output Key (x-only): {Q.export_pubkey(taproot=True).hex()}")
+    print(f"  Notice how the tweaked public key is odd and not even from the prefix of 03...")
     print(f"")
-    print(f"Key Insight: P' = d'×G = (d + t)×G = d×G + t×G = P + t×G")
+    print(f"Key Insight: Q = d'×G = (d + t)×G = d×G + t×G = P + t×G")
     
     # Step 5: Verify the mathematical relationship
     print(f"\n=== STEP 5: Mathematical Verification ===")
-    verification_result = tweaked_private_key.get_public_key().to_hex() == tweaked_public_key.to_hex()
-    print(f"Verification: d' × G = P'? {verification_result}")
+    verification_result = tweaked_private_key.get_public_key().to_hex() == Q.export_pubkey().hex()
+    print(f"Verification: d' × G = Q? {verification_result}")
     print(f"")
     print(f"This confirms:")
-    print(f"  ✓ The tweaked private key d' correctly generates the tweaked public key P'")
-    print(f"  ✓ The relationship P' = P + t×G holds mathematically")
-    print(f"  ✓ Anyone can compute P' from P and the commitment (public information)")
+    print(f"  ✓ The tweaked private key d' correctly generates the same tweaked public key Q when the tweak is applied directly to the internal Public key")
+    print(f"  ✓ The relationship Q = P + t×G holds mathematically")
+    print(f"  ✓ Anyone can compute Q from P and the commitment (public information)")
     print(f"  ✓ Only the key holder can compute d' from d and tweak (private information)")
     
     return {
@@ -125,8 +148,8 @@ if __name__ == "__main__":
     print("2. Calculate tweak: t = HashTapTweak(xonly_P || merkle_root)")
     print("3. Apply tweaking:")
     print("   - Private key: d' = d + t (mod n)")
-    print("   - Public key:  P' = P + t×G = d'×G")
-    print("4. Result: Output key (P') that commits to script conditions")
+    print("   - Public key:  Q = P + t×G = d'×G")
+    print("4. Result: Output key (Q) that commits to script conditions")
     print("")
     print("=" * 70)
     print("KEY INSIGHTS FROM KEY TWEAKING")
@@ -136,14 +159,14 @@ if __name__ == "__main__":
     print("   - Script Path: Reveal the internal public key (P) and prove script execution (fallback)")
     print("")
     print("2. Cryptographic Binding:")
-    print("   - The tweak (t) cryptographically binds the output key (P') to specific script commitments")
+    print("   - The tweak (t) cryptographically binds the output key (Q) to specific script commitments")
     print("   - Changing the commitment changes the tweak, which changes the output key")
     print("")
     print("3. Deterministic Verification:")
     print("   - Anyone can verify that a tweaked key correctly commits to specific conditions")
-    print("   - Given P and merkle_root, anyone can compute P' and verify it matches")
+    print("   - Given P and merkle_root, anyone can compute Q and verify it matches")
     print("")
     print("4. Privacy Through Indistinguishability:")
-    print("   - The tweaked public key (P') is mathematically indistinguishable from any other Schnorr public key")
+    print("   - The tweaked public key (Q) is mathematically indistinguishable from any other Schnorr public key")
     print("   - Simple payments and complex contracts look identical until spent")
 
