@@ -185,34 +185,35 @@ import hashlib
 
 def demonstrate_key_tweaking():
     setup('testnet')
-    
+
     # Step 1: Generate internal key pair
     internal_private_key = PrivateKey('cTALNpTpRbbxTCJ2A5Vq88UxT44w1PE2cYqiB3n4hRvzyCev1Wwo')
     internal_public_key = internal_private_key.get_public_key()
-    
+
     print("=== STEP 1: Internal Key Generation ===")
     print(f"Internal Private Key: {internal_private_key.to_wif()}")
     print(f"Internal Public Key:  {internal_public_key.to_hex()}")
-    
+
     # Step 2: Create simple script commitment (we'll use empty for this example)
     # In real Taproot, this would be a Merkle root of script conditions
-    script_commitment = b''  # Empty = key-path-only spending
-    
+    script_commitment = b'' # Empty = key-path-only spending
+
     print(f"\n=== STEP 2: Script Commitment ===")
     print(f"Script Commitment: {script_commitment.hex() if script_commitment else 'Empty (key-path-only)'}")
-    
+
     # Step 3: Calculate tweak using BIP341 formula
-    internal_pubkey_bytes = bytes.fromhex(internal_public_key.to_hex()[2:])  # x-only
-    tweak_preimage = b'TapTweak' + internal_pubkey_bytes + script_commitment
+    internal_pubkey_bytes = bytes.fromhex(internal_public_key.to_x_only_hex()) # x-only
+    tag_digest = hashlib.sha256(b'TapTweak').digest()
+    tweak_preimage = tag_digest + tag_digest + internal_pubkey_bytes + script_commitment
     tweak_hash = hashlib.sha256(tweak_preimage).digest()
     tweak_int = int.from_bytes(tweak_hash, 'big')
-    
+
     print(f"\n=== STEP 3: Tweak Calculation ===")
     print(f"Internal PubKey (x-only): {internal_pubkey_bytes.hex()}")
     print(f"Tweak Preimage: TapTweak || {internal_pubkey_bytes.hex()} || {script_commitment.hex()}")
     print(f"Tweak Hash: {tweak_hash.hex()}")
     print(f"Tweak Integer: {tweak_int}")
-    
+
     # Step 4: Apply tweaking formula
     internal_privkey_int = int.from_bytes(internal_private_key.to_bytes(), 'big')
     curve_order = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
