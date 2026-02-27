@@ -386,8 +386,8 @@ a8 = OP_SHA256
 #### 0. Initial state: Load script input
 
 ```
-| 68656c6c6f776f726c64 (preimage_hex) |
-└──────────────────────────────────────┘
+| 68656c6c...6f726c64 | (Preimage "helloworld" in hex)
+└─────────────────────┘
 ```
 
 **(Preimage "helloworld" hex representation already on stack)**
@@ -395,8 +395,8 @@ a8 = OP_SHA256
 #### 1. OP_SHA256: Calculate SHA256 hash of top stack element
 
 ```
-| 936a185c...f8f8f07af (computed_hash) |
-└───────────────────────────────────────┘
+| 936a185c...8f8f07af | (Computed hash)
+└─────────────────────┘
 ```
 
 **(SHA256("helloworld") = 936a185c...07af)**
@@ -404,9 +404,9 @@ a8 = OP_SHA256
 #### 2. OP_PUSHBYTES_32: Push expected hash value
 
 ```
-| 936a185c...f8f8f07af (expected_hash) |
-| 936a185c...f8f8f07af (computed_hash) |
-└───────────────────────────────────────┘
+| 936a185c...8f8f07af | (Expected hash)
+| 936a185c...8f8f07af | (Computed hash)
+└─────────────────────┘
 ```
 
 **(Two identical hash values now at stack top)**
@@ -414,8 +414,8 @@ a8 = OP_SHA256
 #### 3. OP_EQUALVERIFY: Verify hash equality
 
 ```
-| (empty_stack) |
-└───────────────┘
+|                     | (Empty stack)
+└─────────────────────┘
 ```
 
 **(Verification successful: expected_hash == computed_hash, both elements removed)**
@@ -423,8 +423,8 @@ a8 = OP_SHA256
 #### 4. OP_PUSHNUM_1: Push success flag
 
 ```
-| 01 (true_value) |
-└─────────────────┘
+|          01          | (Script execution successful)
+└──────────────────────┘
 ```
 
 **(Script execution successful: non-zero value at stack top)**
@@ -460,8 +460,8 @@ ac = OP_CHECKSIG
 #### 0. Initial state: Load script input
 
 ```
-| 26a0eadc...31f9f1c5c (bob_signature) |
-└───────────────────────────────────────┘
+| 26a0eadc...1f9f1c5c | (Bob's 64-byte signature)
+└─────────────────────┘
 ```
 
 **(Bob's 64-byte Schnorr signature already on stack)**
@@ -469,9 +469,9 @@ ac = OP_CHECKSIG
 #### 1. OP_PUSHBYTES_32: Push Bob's x-only pubkey
 
 ```
-| 84b59516...ceef63af5 (bob_pubkey)      |
-| 26a0eadc...31f9f1c5c (bob_signature)   |
-└────────────────────────────────────────┘
+| 84b59516...eef63af5 | (Bob's 32-byte pubkey)
+| 26a0eadc...1f9f1c5c | (Bob's 64-byte signature)
+└─────────────────────┘
 ```
 
 **(Bob's 32-byte x-only pubkey pushed to stack top)**
@@ -479,7 +479,7 @@ ac = OP_CHECKSIG
 #### 2. OP_CHECKSIG: Verify Schnorr signature
 
 ```
-| 01 (signature_valid) |
+|          01          | (Signature is valid)
 └──────────────────────┘
 ```
 
