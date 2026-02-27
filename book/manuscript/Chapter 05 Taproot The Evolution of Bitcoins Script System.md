@@ -378,7 +378,7 @@ tx, signature = create_simple_taproot_transaction()
 
 ## Real Transaction Analysis
 
-Let's examine a real Taproot transaction: [`a3b4d038...7a42cb6`](https://mempool.space/testnet/tx/a3b4d0382efd189619d4f5bd598b6421e709649b87532d53aecdc76457a42cb6)
+Let's examine a real Taproot transaction: [`a3b4d038...57a42cb6`](https://mempool.space/testnet/tx/a3b4d0382efd189619d4f5bd598b6421e709649b87532d53aecdc76457a42cb6?showDetails=true)
 
 **Transaction Structure:**
 ```

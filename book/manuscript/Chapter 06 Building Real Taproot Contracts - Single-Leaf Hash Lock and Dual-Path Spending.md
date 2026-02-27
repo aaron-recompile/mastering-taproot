@@ -353,7 +353,7 @@ preimage_hex = preimage.encode('utf-8').hex()
 
 After running the above code, we can observe real transactions on testnet:
 
-**Transaction ID**: [`68f7c8f0...2e604f`](https://mempool.space/testnet/tx/68f7c8f0ab6b3c6f7eb037e36051ea3893b668c26ea6e52094ba01a7722e604f)
+**Transaction ID**: [`68f7c8f0...722e604f`](https://mempool.space/testnet/tx/68f7c8f0ab6b3c6f7eb037e36051ea3893b668c26ea6e52094ba01a7722e604f?showDetails=true)
 
 **Witness Data Analysis**:
 

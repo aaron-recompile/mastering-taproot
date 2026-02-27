@@ -156,7 +156,7 @@ def spend_multisig_p2sh():
 
 Let's trace through the complete script execution using our real transaction data, understanding Bitcoin Core's two-phase P2SH execution mechanism:
 
-**Transaction ID**: [`e68bef53...0fd4e0`](https://mempool.space/testnet/tx/e68bef534c7536300c3ae5ccd0f79e031cab29d262380a37269151e8ba0fd4e0)
+**Transaction ID**: [`e68bef53...ba0fd4e0`](https://mempool.space/testnet/tx/e68bef534c7536300c3ae5ccd0f79e031cab29d262380a37269151e8ba0fd4e0?showDetails=true)
 
 ## Phase 1: ScriptSig + ScriptPubKey Execution
 
@@ -314,7 +314,7 @@ CheckSequenceVerify (CSV) enables relative time locks, where spending is delayed
 
 ### Real-World Implementation: 3-Block Time Lock
 
-**Transaction ID**: [`34f5bf0c...61906f`](https://mempool.space/testnet/tx/34f5bf0cf328d77059b5674e71442ded8cdcfc723d0136733e0dbf180861906f)
+**Transaction ID**: [`34f5bf0c...0861906f`](https://mempool.space/testnet/tx/34f5bf0cf328d77059b5674e71442ded8cdcfc723d0136733e0dbf180861906f?showDetails=true)
 
 This transaction demonstrates a P2SH script that combines CSV time lock with P2PKH signature verification—a common pattern for inheritance and escrow applications.
 

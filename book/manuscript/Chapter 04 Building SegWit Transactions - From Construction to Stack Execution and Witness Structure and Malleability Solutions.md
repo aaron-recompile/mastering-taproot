@@ -140,7 +140,7 @@ From: tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
 To:   tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
 ```
 
-**Note:** This example uses a real testnet transaction that was successfully broadcast. The transaction TXID is [`271cf628...084e3e6`](https://mempool.space/testnet/tx/271cf6285479885a5ffa4817412bfcf55e7d2cf43ab1ede06c4332b46084e3e6).
+**Note:** This example uses a real testnet transaction that was successfully broadcast. The transaction TXID is [`271cf628...6084e3e6`](https://mempool.space/testnet/tx/271cf6285479885a5ffa4817412bfcf55e7d2cf43ab1ede06c4332b46084e3e6?showDetails=true).
 
 ## 4.3 SegWit Transaction Construction and Analysis
 
