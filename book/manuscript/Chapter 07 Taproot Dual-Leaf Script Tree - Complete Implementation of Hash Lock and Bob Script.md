@@ -37,14 +37,15 @@ We will analyze the complete implementation of dual-leaf script trees based on t
 
 ### Transaction 1: Hash Script Path Spending
 
-- **Transaction ID**: [`b61857a0...a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430)
-- **Taproot Address**: `tb1p93c4...9a4w3z`
+- **Transaction ID**: [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true)
+- **Taproot Address**: `tb1p93c4...gq9a4w3z`
 - **Spending Method**: Script Path (using preimage "helloworld")
 
 ### Transaction 2: Bob Script Path Spending
 
-- **Transaction ID**: [`185024da...70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0)
-- **Taproot Address**: `tb1p93c4...9a4w3z`
+- **Transaction ID**: [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true)
+- **Taproot Address**: `tb1p93c4...gq9a4w3z`
+
 - **Spending Method**: Script Path (using Bob's private key signature)
 
 Note that these two transactions use the **exact same Taproot address**, proving they indeed originate from the same dual-leaf script tree!
@@ -110,7 +111,7 @@ After mastering the dual-leaf script tree construction principles, let's see how
 
 ### Hash Script Path Spending Core Code
 
-Based on transaction `b61857a0...a2e430` implementation:
+Based on transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true) implementation:
 
 ```python
 def hash_script_path_spending():
@@ -162,7 +163,7 @@ def hash_script_path_spending():
 
 ### Bob Script Path Spending Core Code
 
-Based on transaction `185024da...70cfe0` implementation:
+Based on transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true) implementation:
 
 ```python
 def bob_script_path_spending():
@@ -235,7 +236,7 @@ In dual-leaf script trees, each script's Control Block contains its sibling node
 
 ### Hash Script Path Control Block
 
-**Data extracted from transaction b61857a0...**:
+**Data extracted from transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true)**:
 
 ```
 Control Block: c050be5f...8105cf9df
@@ -248,7 +249,7 @@ Structure breakdown:
 
 ### Bob Script Path Control Block
 
-**Data extracted from transaction 185024da...**:
+**Data extracted from transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true)**:
 
 ```
 Control Block: c050be5f...8f10f659e
@@ -355,7 +356,7 @@ verify_control_block_and_address_reconstruction()
 
 ## Script Path 1: Hash Script Execution Analysis
 
-Now let's analyze the complete execution process of Hash Script Path in detail. Based on actual data from transaction `b61857a0...`:
+Now let's analyze the complete execution process of Hash Script Path in detail. Based on actual data from transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true):
 
 ### Witness Data Structure
 
@@ -431,7 +432,7 @@ a8 = OP_SHA256
 
 ## Script Path 2: Bob Script Execution Analysis
 
-Next, let's analyze Bob Script Path execution process. Based on actual data from transaction `185024da...`:
+Next, let's analyze Bob Script Path execution process. Based on actual data from transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true):
 
 ### Witness Data Structure
 
