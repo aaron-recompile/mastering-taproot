@@ -60,17 +60,17 @@ Before diving into code implementation, we need to understand Taproot's core dev
 **Reveal Phase**:
 - Choose one spending condition for unlocking
 - Key Path: Spend directly with key (maximum privacy)
-- Script Path: Reveal and execute specific script branch
+- Script Path: Reveal and execute specific leaf script
 - **Only expose actually used conditions**, other conditions remain private forever
 
-The power of this pattern lies in: During Commit phase, all contracts of different complexity look identical; During Reveal phase, only the actually used branch needs to be exposed.
+The power of this pattern lies in: During Commit phase, all contracts of different complexity look identical; During Reveal phase, only the actually used leaf script needs to be exposed.
 
 ## Single Leaf Hash Lock Script: From Commit to Reveal
 
 Let's learn the complete implementation flow of Taproot single leaf scripts through a simple Hash Lock case. Based on Alice's conditional payment scenario introduced earlier, we'll implement:
 
 - **Hash Lock Script**: Verify hash value of secret word "helloworld"
-- **Single Leaf Structure**: Simplest script tree containing only one script branch
+- **Single Leaf Structure**: Simplest script tree containing only one leaf script
 - **Dual Path Spending**: Key Path (Alice's direct control) + Script Path (conditional spending)
 
 ### What is Tagged Hash?
@@ -232,7 +232,7 @@ This is exactly the advantage of Schnorr signatures over ECDSA: supporting linea
 
 ### Phase 3: Reveal Phase - Script Path Spending (Conditional Unlock)
 
-Now let's implement the complete code for Script Path spending. Unlike Key Path's simplicity, Script Path requires building more complex witness data to prove we have the right to use a specific script branch.
+Now let's implement the complete code for Script Path spending. Unlike Key Path's simplicity, Script Path requires building more complex witness data to prove we have the right to use a specific leaf script.
 
 ### Script Path Spending Code Implementation
 
@@ -615,7 +615,7 @@ Through actual code implementation and on-chain data analysis, we can clearly se
 
 - Witness Data: 3 elements (input + script + control block)
 - Transaction Size: ~234 bytes
-- Privacy Level: Partial privacy, only exposes used script branch
+- Privacy Level: Partial privacy, only exposes used leaf script
 - Verification Complexity: Control block verification + script execution
 - Fee Cost: Medium cost (~50% additional overhead)
 
@@ -623,7 +623,7 @@ This **selective reveal** design enables Taproot to support various complex appl
 
 ## The Privacy Revolution: What Makes Taproot Different
 
-Unlike P2SH, where **all conditions are revealed** when spending, Taproot Script Path ensures only the executed branch is ever seen. This fundamental shift redefines Bitcoin's privacy model for contracts.
+Unlike P2SH, where **all conditions are revealed** when spending, Taproot Script Path ensures only the executed leaf script is ever seen. This fundamental shift redefines Bitcoin's privacy model for contracts.
 
 **Traditional Script Limitations:**
 - All spending conditions visible on-chain
