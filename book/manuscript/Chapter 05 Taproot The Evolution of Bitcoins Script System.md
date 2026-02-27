@@ -247,6 +247,7 @@ def demonstrate_key_tweaking():
 # Execute the demonstration
 result = demonstrate_key_tweaking()
 ```
+
 Under the hood, during `internal_public_key.to_taproot_hex()`, bitcoinutils library executes:
 ```python
 # calculate tweak using HashTapTweak(internal_public_key || script (empty))
