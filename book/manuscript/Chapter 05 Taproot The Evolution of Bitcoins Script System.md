@@ -212,30 +212,28 @@ def demonstrate_key_tweaking():
     print(f"Tweak Preimage: TapTweak || {internal_pubkey_bytes.hex()} || {script_commitment.hex()}")
     print(f"Tweak Hash: {tweak_hash.hex()}")
     print(f"Tweak Integer: {tweak_int}")
-    
-    # Step 4: Apply tweaking formula
-    internal_privkey_int = int.from_bytes(internal_private_key.to_bytes(), 'big')
+
+    # Step 4: Apply tweaking formula to private key 
     curve_order = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+    internal_privkey_int = int.from_bytes(internal_private_key.to_bytes(), 'big')
     tweaked_privkey_int = (internal_privkey_int + tweak_int) % curve_order
-    
     tweaked_private_key = PrivateKey.from_bytes(tweaked_privkey_int.to_bytes(32, 'big'))
     tweaked_public_key = tweaked_private_key.get_public_key()
-    
+
     print(f"\n=== STEP 4: Tweaking Application ===")
-    print(f"Original Private Key: {internal_privkey_int}")
-    print(f"Tweaked Private Key:  {tweaked_privkey_int}")
-    print(f"Private Key Change:   +{tweak_int}")
-    print(f"")
-    print(f"Original Public Key:  {internal_public_key.to_hex()}")
-    print(f"Tweaked Public Key:   {tweaked_public_key.to_hex()}")
-    print(f"Public Key (x-only):  {tweaked_public_key.to_hex()[2:]}")
-    
+    print(f"Original Private Key d: {internal_privkey_int}")
+    print(f"Tweaked Private Key d': {tweaked_privkey_int}")
+    print(f"Private Key Change: +{tweak_int}\n")
+    print(f"Original Public Key P: {internal_public_key.to_hex()}")
+    print(f"Tweaked Public Key P': {tweaked_public_key.to_hex()}")
+    print(f"Public Key (x-only): {tweaked_public_key.to_hex()[2:]}")
+
     # Step 5: Verify the mathematical relationship
     print(f"\n=== STEP 5: Mathematical Verification ===")
-    print(f"d' * G = P'? {tweaked_private_key.get_public_key().to_hex() == tweaked_public_key.to_hex()}")
+    print(f"d' * G == P + tweak_int * G? {tweaked_public_key.to_hex()[2:] == internal_public_key.to_taproot_hex()[0]}")
     print(f"Anyone can compute P' from P and commitment: ✓")
     print(f"Only key holder can compute d' from d and tweak: ✓")
-    
+
     return {
         'internal_private': internal_private_key,
         'internal_public': internal_public_key,
