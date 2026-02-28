@@ -37,14 +37,15 @@ We will analyze the complete implementation of dual-leaf script trees based on t
 
 ### Transaction 1: Hash Script Path Spending
 
-- **Transaction ID**: [`b61857a0...a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430)
-- **Taproot Address**: `tb1p93c4...9a4w3z`
+- **Transaction ID**: [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true)
+- **Taproot Address**: `tb1p93c4...gq9a4w3z`
 - **Spending Method**: Script Path (using preimage "helloworld")
 
 ### Transaction 2: Bob Script Path Spending
 
-- **Transaction ID**: [`185024da...70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0)
-- **Taproot Address**: `tb1p93c4...9a4w3z`
+- **Transaction ID**: [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true)
+- **Taproot Address**: `tb1p93c4...gq9a4w3z`
+
 - **Spending Method**: Script Path (using Bob's private key signature)
 
 Note that these two transactions use the **exact same Taproot address**, proving they indeed originate from the same dual-leaf script tree!
@@ -110,7 +111,7 @@ After mastering the dual-leaf script tree construction principles, let's see how
 
 ### Hash Script Path Spending Core Code
 
-Based on transaction `b61857a0...a2e430` implementation:
+Based on transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true) implementation:
 
 ```python
 def hash_script_path_spending():
@@ -162,7 +163,7 @@ def hash_script_path_spending():
 
 ### Bob Script Path Spending Core Code
 
-Based on transaction `185024da...70cfe0` implementation:
+Based on transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true) implementation:
 
 ```python
 def bob_script_path_spending():
@@ -235,7 +236,7 @@ In dual-leaf script trees, each script's Control Block contains its sibling node
 
 ### Hash Script Path Control Block
 
-**Data extracted from transaction b61857a0...**:
+**Data extracted from transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true)**:
 
 ```
 Control Block: c050be5f...8105cf9df
@@ -248,7 +249,7 @@ Structure breakdown:
 
 ### Bob Script Path Control Block
 
-**Data extracted from transaction 185024da...**:
+**Data extracted from transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true)**:
 
 ```
 Control Block: c050be5f...8f10f659e
@@ -355,7 +356,7 @@ verify_control_block_and_address_reconstruction()
 
 ## Script Path 1: Hash Script Execution Analysis
 
-Now let's analyze the complete execution process of Hash Script Path in detail. Based on actual data from transaction `b61857a0...`:
+Now let's analyze the complete execution process of Hash Script Path in detail. Based on actual data from transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true):
 
 ### Witness Data Structure
 
@@ -386,8 +387,8 @@ a8 = OP_SHA256
 #### 0. Initial state: Load script input
 
 ```
-| 68656c6c6f776f726c64 (preimage_hex) |
-└──────────────────────────────────────┘
+| 68656c6c...6f726c64 | (Preimage "helloworld" in hex)
+└─────────────────────┘
 ```
 
 **(Preimage "helloworld" hex representation already on stack)**
@@ -395,8 +396,8 @@ a8 = OP_SHA256
 #### 1. OP_SHA256: Calculate SHA256 hash of top stack element
 
 ```
-| 936a185c...f8f8f07af (computed_hash) |
-└───────────────────────────────────────┘
+| 936a185c...8f8f07af | (Computed hash)
+└─────────────────────┘
 ```
 
 **(SHA256("helloworld") = 936a185c...07af)**
@@ -404,9 +405,9 @@ a8 = OP_SHA256
 #### 2. OP_PUSHBYTES_32: Push expected hash value
 
 ```
-| 936a185c...f8f8f07af (expected_hash) |
-| 936a185c...f8f8f07af (computed_hash) |
-└───────────────────────────────────────┘
+| 936a185c...8f8f07af | (Expected hash)
+| 936a185c...8f8f07af | (Computed hash)
+└─────────────────────┘
 ```
 
 **(Two identical hash values now at stack top)**
@@ -414,8 +415,8 @@ a8 = OP_SHA256
 #### 3. OP_EQUALVERIFY: Verify hash equality
 
 ```
-| (empty_stack) |
-└───────────────┘
+|                     | (Empty stack)
+└─────────────────────┘
 ```
 
 **(Verification successful: expected_hash == computed_hash, both elements removed)**
@@ -423,15 +424,15 @@ a8 = OP_SHA256
 #### 4. OP_PUSHNUM_1: Push success flag
 
 ```
-| 01 (true_value) |
-└─────────────────┘
+|          01          | (Script execution successful)
+└──────────────────────┘
 ```
 
 **(Script execution successful: non-zero value at stack top)**
 
 ## Script Path 2: Bob Script Execution Analysis
 
-Next, let's analyze Bob Script Path execution process. Based on actual data from transaction `185024da...`:
+Next, let's analyze Bob Script Path execution process. Based on actual data from transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true):
 
 ### Witness Data Structure
 
@@ -460,8 +461,8 @@ ac = OP_CHECKSIG
 #### 0. Initial state: Load script input
 
 ```
-| 26a0eadc...31f9f1c5c (bob_signature) |
-└───────────────────────────────────────┘
+| 26a0eadc...1f9f1c5c | (Bob's 64-byte signature)
+└─────────────────────┘
 ```
 
 **(Bob's 64-byte Schnorr signature already on stack)**
@@ -469,9 +470,9 @@ ac = OP_CHECKSIG
 #### 1. OP_PUSHBYTES_32: Push Bob's x-only pubkey
 
 ```
-| 84b59516...ceef63af5 (bob_pubkey)      |
-| 26a0eadc...31f9f1c5c (bob_signature)   |
-└────────────────────────────────────────┘
+| 84b59516...eef63af5 | (Bob's 32-byte pubkey)
+| 26a0eadc...1f9f1c5c | (Bob's 64-byte signature)
+└─────────────────────┘
 ```
 
 **(Bob's 32-byte x-only pubkey pushed to stack top)**
@@ -479,7 +480,7 @@ ac = OP_CHECKSIG
 #### 2. OP_CHECKSIG: Verify Schnorr signature
 
 ```
-| 01 (signature_valid) |
+|          01          | (Signature is valid)
 └──────────────────────┘
 ```
 

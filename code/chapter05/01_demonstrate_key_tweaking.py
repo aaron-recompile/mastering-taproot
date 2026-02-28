@@ -34,13 +34,11 @@ def demonstrate_key_tweaking():
     print(f"\n=== STEP 2: Script Commitment ===")
     print(f"Script Commitment: {script_commitment.hex() if script_commitment else 'Empty (key-path-only)'}")
     
-    # Step 3: Calculate tweak using BIP341 formula
-    # Extract x-only public key (skip the 0x02 or 0x03 prefix)
-    internal_pubkey_hex = internal_public_key.to_hex()
-    internal_pubkey_bytes = bytes.fromhex(internal_pubkey_hex[2:])  # x-only (skip prefix)
-    
-    # BIP341 HashTapTweak: SHA256("TapTweak" || xonly_internal_key || merkle_root)
-    tweak_preimage = b'TapTweak' + internal_pubkey_bytes + script_commitment
+    # Step 3: Calculate tweak using BIP341 tagged-hash formula
+    # HashTapTweak(x) = SHA256(SHA256("TapTweak") || SHA256("TapTweak") || x)
+    internal_pubkey_bytes = bytes.fromhex(internal_public_key.to_x_only_hex())  # x-only
+    tag_hash = hashlib.sha256(b'TapTweak').digest()
+    tweak_preimage = tag_hash + tag_hash + internal_pubkey_bytes + script_commitment
     tweak_hash = hashlib.sha256(tweak_preimage).digest()
     tweak_int = int.from_bytes(tweak_hash, 'big')
     
@@ -50,7 +48,8 @@ def demonstrate_key_tweaking():
     print(f"Internal PubKey (x-only): {internal_pubkey_bytes.hex()}")
     print(f"Script Commitment: {script_commitment.hex() if script_commitment else '(empty)'}")
     print(f"")
-    print(f"Tweak Preimage: TapTweak || {internal_pubkey_bytes.hex()} || {script_commitment.hex()}")
+    print(f"Tag Hash: {tag_hash.hex()}")
+    print(f"Tweak Preimage: SHA256(TapTweak) || SHA256(TapTweak) || {internal_pubkey_bytes.hex()} || {script_commitment.hex()}")
     print(f"Tweak Hash (SHA256): {tweak_hash.hex()}")
     print(f"Tweak Integer (t): {tweak_int}")
     print(f"")
@@ -92,6 +91,9 @@ def demonstrate_key_tweaking():
     print(f"  Original (P):  {internal_public_key.to_hex()}")
     print(f"  Tweaked (P'):  {tweaked_public_key.to_hex()}")
     print(f"  Output Key (x-only): {tweaked_public_key.to_hex()[2:]}")
+    expected_output_key_xonly = internal_public_key.get_taproot_address([]).to_witness_program()
+    print(f"  Library Output Key (x-only): {expected_output_key_xonly}")
+    print(f"  Output Key Match: {tweaked_public_key.to_hex()[2:] == expected_output_key_xonly}")
     print(f"")
     print(f"Key Insight: P' = d'×G = (d + t)×G = d×G + t×G = P + t×G")
     

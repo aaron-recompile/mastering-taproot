@@ -157,7 +157,7 @@ The spender provides:
 
 Let's examine the famous first Bitcoin transaction: Satoshi Nakamoto sending 10 BTC to Hal Finney.
 
-**Transaction ID**: [`f4184fc5...1e9e16`](https://mempool.space/tx/f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16)
+**Transaction ID**: [`f4184fc5...831e9e16`](https://mempool.space/tx/f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16?showDetails=true)
 
 **Transaction Structure**:
 
@@ -350,7 +350,7 @@ if __name__ == "__main__":
 
 Let's analyze the actual data from our transaction execution. When this code runs, it produces a real transaction that was broadcast to testnet:
 
-**Transaction ID**: [`bf41b474...8e58355`](https://mempool.space/testnet/tx/bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355)
+**Transaction ID**: [`bf41b474...a8e58355`](https://mempool.space/testnet/tx/bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355?showDetails=true)
 
 **Raw Transaction Data**:
 
@@ -484,11 +484,11 @@ Result: SUCCESS (non-zero value on stack)
 ### Transaction Broadcast Result
 
 This transaction was successfully broadcast to the Bitcoin testnet and can be viewed at:
-[`mempool.space/testnet/tx/bf41b474...8e58355`](https://mempool.space/testnet/tx/bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355)
+[`mempool.space/testnet/tx/bf41b474...a8e58355`](https://mempool.space/testnet/tx/bf41b47481a9d1c99af0b62bb36bc864182312f39a3e1e06c8f6304ba8e58355?showDetails=true)
 
 **Key Observations**:
 
-- The input references UTXO from transaction `34b90a15...1806f7` at index 1
+- The input references UTXO from transaction [`34b90a15...141806f7`](https://mempool.space/testnet/tx/34b90a15d0a9ec9ff3d7bed2536533c73278a9559391cb8c9778b7e7141806f7?showDetails=true) at index 1
 - The output sends 29,400 satoshis to a SegWit address
 - The transaction fee is 206 satoshis (29,606 - 29,400)
 - The signature verification proves ownership of the private key without revealing it
