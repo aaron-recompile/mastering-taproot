@@ -215,7 +215,6 @@ def demonstrate_key_tweaking():
     print(f"Tweak Integer: {tweak_int}")
 
     # Step 4: Apply tweaking formula
-    internal_privkey_int = int.from_bytes(internal_private_key.to_bytes(), 'big')
     curve_order = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
     internal_privkey_int = int.from_bytes(internal_private_key.to_bytes(), 'big')
     tweaked_privkey_int = (internal_privkey_int + tweak_int) % curve_order
@@ -232,7 +231,7 @@ def demonstrate_key_tweaking():
 
     # Step 5: Verify the mathematical relationship
     print(f"\n=== STEP 5: Mathematical Verification ===")
-    print(f"d' * G == P + tweak_int * G? {tweaked_public_key.to_hex()[2:] == internal_public_key.to_taproot_hex()[0]}")
+    print(f"d' * G == P + tweak_int * G? {tweaked_public_key.to_x_only_hex() == internal_public_key.to_taproot_hex()[0]}")
     print(f"Anyone can compute P' from P and commitment: [OK]")
     print(f"Only key holder can compute d' from d and tweak: [OK]")
 
