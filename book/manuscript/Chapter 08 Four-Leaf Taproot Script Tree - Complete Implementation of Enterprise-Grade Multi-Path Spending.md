@@ -528,7 +528,7 @@ paths = {
 
 Let's use a successfully executed multisig transaction as an example to deeply analyze the complete verification process of the Control Block.
 
-**Transaction ID**: [`1951a3be...e604a1`](https://mempool.space/testnet/tx/1951a3be0f05df377b1789223f6da66ed39c781aaf39ace0bf98c3beb7e604a1)
+**Transaction ID**: [`1951a3be...b7e604a1`](https://mempool.space/testnet/tx/1951a3be0f05df377b1789223f6da66ed39c781aaf39ace0bf98c3beb7e604a1?showDetails=true)
 
 **Executed Script**: Script 1 (2-of-2 Multisig)
 
