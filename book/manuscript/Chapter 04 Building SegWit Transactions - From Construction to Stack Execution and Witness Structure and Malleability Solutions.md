@@ -32,10 +32,12 @@ SegWit Transaction Structure:
                                              } TXID = SHA256(SHA256(base_only))
 ┌─────────────────────────────────────────┐
 │        Witness Data (Separated)         │  } Committed separately
-│    ┌─────────────────────────────────┐  │
-│    │ Signature │ Public Key          │  │  (For P2WPKH)
+│    ┌─────────────────────────────────┐  │      (For P2WPKH)
+│    │ Signature │ Public Key          │  │
 │    └─────────────────────────────────┘  │
 └─────────────────────────────────────────┘
+           ↓
+    WTXID = SHA256(SHA256(entire_transaction[base + witness]))
 ```
 
 ### The Malleability Problem Demonstrated
@@ -475,14 +477,14 @@ Intuition: Witness bytes are charged at 1 weight unit/byte while base bytes are 
 
 In legacy transactions, a 2-of-3 multisig requires a large scriptSig:
 ```
-scriptSig: <empty> <sig1> <sig2> <redeemScript>
+scriptSig: OP_0 <sig1> <sig2> <redeemScript>
 Total: ~300 bytes in scriptSig (counted at full weight)
 ```
 
 In SegWit P2WSH, the same authorization moves to witness:
 ```
 scriptSig: <empty> (0 bytes)
-witness: <empty> <sig1> <sig2> <witnessScript>
+witness: OP_0 <sig1> <sig2> <witnessScript>
 Total: ~300 bytes in witness (75% discount)
 ```
 
