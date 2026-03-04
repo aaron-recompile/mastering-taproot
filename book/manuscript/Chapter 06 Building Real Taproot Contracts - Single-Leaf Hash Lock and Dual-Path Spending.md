@@ -147,7 +147,7 @@ def create_taproot_commitment():
 
 3. **Output Key Generation**:
     ```python
-    # BIP341 formula: Q = P + H("TapTweak" || P || merkle_root) * G
+    # BIP341 formula: Q = P + H("TapTweak" || p || merkle_root) * G where p = c[1:33] (ie x coordinate of pubkey) and P = lift_x(int(p)) (ie even Y x,y point on curve) where lift_x and [:] are defined as in BIP340.
     internal_pubkey = bytes.fromhex("50be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3")
     tweak = tagged_hash("TapTweak", internal_pubkey + merkle_root)
     output_key = point_add(internal_pubkey, scalar_mult(tweak, G))
