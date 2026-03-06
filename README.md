@@ -57,6 +57,18 @@ The framework-first, code-iterative approach: the complete narrative arc from pr
 
 ---
 
+### Early Testers Welcome
+
+If you're experimenting with the code examples, infrastructure tooling, or regtest scenarios and would like to provide feedback, early testers are very welcome.
+
+See:  
+👉 [Issue #38: Early testers welcome for btcaaron / btcrun](https://github.com/aaron-recompile/mastering-taproot/issues/38)
+
+Small feedback such as installation experience, example execution results, or documentation clarity is extremely helpful at this stage.
+
+
+---
+
 ### Repository Structure
 
 ```
