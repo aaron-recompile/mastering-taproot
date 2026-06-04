@@ -25,6 +25,11 @@ worklog/
 memo/
 /tools/
 
+# Local session/work artifacts (not for the manuscript)
+SESSION_MEMO_*.md
+review-ch09-12.md
+commit_mint_info.json
+
 # New book (not for this repo)
 book-cryptofund/
 notebooks-cryptofund/
@@ -32,7 +37,11 @@ code-cryptofund/
 
 # Manuscript archive
 book/manuscript/archive/
-archive/
+/archive/
+
+# Local code backups (not versioned; README below is tracked)
+code/archive/**
+!code/archive/README.md
 book/leanpub-release/
 
 # ============================================================
@@ -54,3 +63,8 @@ __pycache__/
 .conda-environment
 conda-environment.yml
 **/DEBUG_NOTES.md
+
+# Editor / tooling local state
+.claude/
+.obsidian/
+**/.obsidian/
