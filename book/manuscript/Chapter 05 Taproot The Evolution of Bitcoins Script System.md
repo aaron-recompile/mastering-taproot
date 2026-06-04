@@ -1,43 +1,37 @@
 # Chapter 5: Taproot: The Evolution of Bitcoin's Script System
 
-Taproot represents the culmination of Bitcoin's scripting evolution, demonstrating how the most sophisticated smart contracts can appear identical to simple payments. This revolutionary approach combines Schnorr signatures with cryptographic key tweaking to create Bitcoin's most advanced and private authorization system.
+Taproot represents the culmination of Bitcoin's scripting evolution: until spent, complex spending conditions can be made to look identical to simple payments on-chain.
 
-## The Taproot Promise: Unified Privacy
+Two pieces of machinery make this possible, and this chapter takes them one at a time:
 
-The fundamental breakthrough of Taproot is **payment uniformity**. Whether a transaction represents:
-- A simple single-signature payment
-- A complex multi-party contract
-- A Lightning Network channel
-- A corporate treasury with multiple authorization levels
+1. **Schnorr signatures (BIP340)** — a new signature scheme replacing ECDSA.
+2. **Key tweaking (BIP341)** — a way to attach extra information to a public key without changing how it looks on-chain.
 
-They all appear identical on the blockchain until spent. This uniformity is made possible by two mathematical innovations: Schnorr signatures and key tweaking.
+A few terms used below — `tweak`, `commitment`, `Merkle root`, `script path` — are stage-setting for Chapters 6–8. **If a phrase looks heavy on first read, skim it.** The same sentences will read differently after you've worked through Chapters 5–8. This chapter only assumes what Chapters 1–4 already gave you: keys, signatures, scripts, and witnesses.
 
-## Schnorr Signatures: The Mathematical Foundation
-
-Before understanding Taproot's architecture, we need to grasp the mathematical elegance that makes everything possible: Schnorr signatures and their transformative properties that revolutionize Bitcoin's authorization system.
+## Schnorr Signatures
 
 ### Why Schnorr? The ECDSA Limitations
 
-Bitcoin originally used ECDSA (Elliptic Curve Digital Signature Algorithm) for digital signatures, but this choice came with significant limitations that Schnorr completely eliminates:
+Bitcoin shipped with ECDSA in 2009 and has used it ever since. ECDSA is fine for signing and verifying transactions in isolation — but Taproot's design needs more than that. It needs signatures that don't drift when copied, that combine cleanly when multiple parties sign together, and that behave predictably under simple algebra. ECDSA was never built for any of those.
 
-**ECDSA Problems:**
-- **Malleability**: Signatures can be modified without invalidating them
-- **No Aggregation**: Multiple signatures cannot be combined
-- **Larger Size**: Signatures are typically 71-72 bytes
-- **Complex Verification**: Requires more computational resources
-- **No Linearity**: Mathematical operations don't preserve relationships
+The properties of ECDSA that get in Taproot's way:
 
-**Schnorr's Revolutionary Advantages:**
-- **Non-malleable**: Under BIP340, deterministic nonces, x-only public keys, and strict encoding rules remove the third-party malleability vectors seen with ECDSA
-- **Key Aggregation**: Multiple public keys can be combined into one
-- **Single-Signature Output**: Produces a single aggregated signature
-- **Compact Size**: Fixed 64-byte signatures
-- **Efficient Verification**: Faster and simpler verification process
-- **Mathematical Linearity**: Enables advanced cryptographic constructions
+- **Malleability**: A third party can alter the encoding of a signature without invalidating it — the same signature, two on-chain forms.
+- **No aggregation**: Two signatures from two parties stay as two separate signatures. They cannot be combined into one.
+- **No linearity**: Adding two ECDSA signatures does not produce a valid signature for the sum of their keys. There is no clean algebra to build on.
+- **Variable size**: 71–72 bytes typically, depending on encoding.
 
-### The Game-Changing Property: Linearity
+BIP340 specifies Schnorr signatures over the same secp256k1 curve, designed around the properties Taproot needs:
 
-The mathematical breakthrough that enables Taproot is Schnorr's **linearity property**:
+- **Non-malleable**: Deterministic nonces, x-only public keys, and strict encoding remove the third-party malleability vectors ECDSA suffers from.
+- **Aggregatable**: Multiple public keys can be combined into one; multiple cooperating signers can produce a single 64-byte signature on-chain.
+- **Linear**: This is the property that unlocks Taproot. We unpack it next.
+- **Fixed 64 bytes**: Smaller and more uniform in size.
+
+### Schnorr Linearity
+
+The property that enables Taproot:
 
 ```
 If Alice has signature A for message M
@@ -45,7 +39,7 @@ And Bob has signature B for the same message M
 Then A + B creates a valid signature for (Alice + Bob)'s combined key
 ```
 
-This simple mathematical relationship enables three revolutionary capabilities:
+From this, three capabilities follow:
 
 1. **Key Aggregation**: Multiple people can combine their public keys into one
 2. **Single-signature Output**: Multiple parties can cooperatively produce one single unified signature
@@ -66,8 +60,8 @@ ECDSA Multisig (3-of-3):
 ├─────────────────────────────────────┤
 │ Total Size: ~213 bytes              │
 │ Verifications: 3 separate           │
-│ Privacy: REVEALS 3 participants     │
-│ Appearance: multi (obviously multi) │
+│ Privacy: reveals 3 participants     │
+│ Appearance: multi                   │
 └─────────────────────────────────────┘
 
 Schnorr Aggregated (3-of-3):
@@ -79,34 +73,13 @@ Schnorr Aggregated (3-of-3):
 │ Total Size: 64 bytes                │
 │ Verifications: 1 single check       │
 │ Privacy: hides participant count    │
-│ Appearance: single (looks single)   │
+│ Appearance: single                  │
 └─────────────────────────────────────┘
 ```
 
-**The Privacy Magic:**
-```
-External Observer sees:
-┌──────────────────┬──────────────────┐
-│   Transaction A  │   Transaction B  │
-├──────────────────┼──────────────────┤
-│ 64-byte signature│ 64-byte signature│
-│ Looks: single    │ Looks: single    │
-└──────────────────┴──────────────────┘
+## Key Tweaking
 
-Reality:
-┌──────────────────┬──────────────────┐
-│   Transaction A  │   Transaction B  │
-├──────────────────┼──────────────────┤
-│ Actual: single   │ Actual: multi    │
-│ (1 person)       │ (3 people)       │
-└──────────────────┴──────────────────┘
-
-[Note] Impossible to distinguish from outside!
-```
-
-## Key Tweaking: The Bridge to Taproot
-
-Taproot leverages Schnorr's linearity through **key tweaking** (also known as **tweakable commitment** in BIP340/341/342 philosophy).
+Taproot leverages Schnorr's linearity through key tweaking (also called tweakable commitment in BIP340/341/342).
 
 Conceptually: 
 ```
@@ -127,7 +100,7 @@ If the point ends up odd-y, implementations flip the private key to `d' = n − 
 
 (Why this matters later: in script-path spending this parity is encoded into the control block's lowest bit. If you don’t track this now, script-path won’t verify later.)
 
-### Visual Representation of Key Tweaking Structure
+### Tweak Flow
 
 ```
 Internal Key (P) ─────────► + tweak ─────────► Output Key (P')
@@ -137,43 +110,12 @@ Internal Key (P) ─────────► + tweak ────────
                     script_path_commitment
 ```
 
-**Key Relationship Diagram:**
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Internal Key  │    │   Tweak Value   │    │   Output Key    │
-│       (P)       │    │   t = H(P||M)   │    │      (P')       │
-│                 │───►│                 │───►│                 │
-│ User's original │    │ Deterministic   │    │ Final address   │
-│ private key     │    │ from commit     │    │ seen on chain   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-        │                        ▲                        │
-        │                        │                        │
-        └─── Can compute d' ─────┘                        │
-                                                          │
-                                 ┌────────────────────────┘
-                                 │
-                                 ▼
-                      ┌─────────────────┐
-                      │   Merkle Root   │
-                      │       (M)       │
-                      │                 │
-                      │ Commitment to   │
-                      │ all possible    │
-                      │ spending paths  │
-                      └─────────────────┘
-```
-
 Where:
 - `P` = **Internal Key** (original public key, user controls)
 - `M` = **Merkle Root** (commitment to all possible spending conditions)
 - `t` = **Tweak Value** (deterministic from P and M)
 - `P'` = **Output Key** (final Taproot address, appears on blockchain)
 - `d'` = **Tweaked Private Key** (for key path spending)
-
-This mathematical relationship ensures that:
-1. **Anyone can compute P'** from P and the commitment（Given the internal key P and (optional) Merkle root M）
-2. **Only the key holder can compute d'** from d and the tweak
-3. **The relationship d' * G = P'** is maintained (signature verification works)
 
 ### Practical Key Tweaking Implementation
 
@@ -247,41 +189,11 @@ def demonstrate_key_tweaking():
 result = demonstrate_key_tweaking()
 ```
 
-**Key Insights from Key Tweaking:**
+The tweaked key produces two spending methods: the **key path**, where the tweaked private key signs directly, and the **script path**, where the internal public key plus a leaf script and control block prove that the leaf was committed in the Merkle root. Both paths produce the same on-chain output shape — `OP_1 <32-byte output key>` — and are indistinguishable until spent.
 
-1. **Dual Spending Paths**: The tweaked key creates two spending methods:
-   - **Key Path**: Use the tweaked private key to sign directly (cooperative)
-   - **Script Path**: Reveal the internal public key and prove script execution (fallback)
+## A Simple Taproot Transaction
 
-2. **Cryptographic Binding**: The tweak cryptographically binds the output key to specific script commitments
-
-3. **Deterministic Verification**: Anyone can verify that a tweaked key correctly commits to specific conditions
-
-4. **Privacy Through Indistinguishability**: The tweaked public key is mathematically indistinguishable from any other Schnorr public key
-
-## Why This Enables Uniform Appearance
-
-The combination of Schnorr signatures and key tweaking creates the "uniform appearance" magic:
-
-```
-Simple Payment:
-├── Internal Key: Just a regular private key
-├── Script Commitment: Empty (no conditions)
-├── Tweaked Key: Internal key + H(key || empty)
-└── Spending: 64-byte Schnorr signature
-
-Complex Contract:
-├── Internal Key: Same regular private key
-├── Script Commitment: Merkle root of 100 conditions
-├── Tweaked Key: Internal key + H(key || merkle_root)
-└── Spending: 64-byte Schnorr signature (if cooperative)
-
-[Note] External View: IDENTICAL 64-byte signatures!
-```
-
-## Simple Taproot Transaction: Putting It All Together
-
-Now let's see how this works in practice with a basic Taproot-to-Taproot transaction:
+A basic Taproot-to-Taproot transaction:
 
 ```python
 from bitcoinutils.setup import setup
@@ -344,9 +256,8 @@ def create_simple_taproot_transaction():
         amounts
     )
     
-    # Add witness data - the simplification here reflects Taproot's efficiency
-    # Unlike SegWit's [signature, public_key], Taproot needs only [signature]
-    # The public key is embedded in the scriptPubKey as the output key
+    # Witness for key-path spend is the signature only; the public key is
+    # already in the scriptPubKey as the output key.
     tx.witnesses.append(TxWitnessInput([sig]))
     
     # Get signed transaction
@@ -367,14 +278,9 @@ def create_simple_taproot_transaction():
 tx, signature = create_simple_taproot_transaction()
 ```
 
-**Key Observations:**
+`get_taproot_address()` applies the BIP341 tweak; `sign_taproot_input()` produces a 64-byte BIP340 signature. The witness stack item is 64 bytes, or 65 with a non-default sighash flag — `SIGHASH_DEFAULT` omits the flag.
 
-1. **Taproot Address Generation**: `get_taproot_address()` automatically applies the tweaking process
-2. **Schnorr Signing**: `sign_taproot_input()` produces exactly 64-byte signatures
-3. **Minimal Witness**: Only the signature is needed in the witness stack（In practice the witness item is 64 or 65 bytes (64-byte signature plus an optional 1-byte sighash flag); with SIGHASH_DEFAULT the flag may be omitted.）
-4. **Identical Appearance**: This transaction looks identical to any other Taproot transaction
-
-## Real Transaction Analysis
+## On-Chain Example: Testnet Taproot Transfer
 
 Let's examine a real Taproot transaction: [`a3b4d038...57a42cb6`](https://mempool.space/testnet/tx/a3b4d0382efd189619d4f5bd598b6421e709649b87532d53aecdc76457a42cb6?showDetails=true)
 
@@ -400,14 +306,11 @@ Structure:
 └── Total: 64 bytes (32 + 32)
 ```
 
-**Key Insights:**
-- **Fixed Length**: Exactly 64 bytes, no variable encoding
-- **No Public Key**: Unlike SegWit, no public key in witness
-- **Single Component**: Just the signature, maximum efficiency
+The signature is exactly 64 bytes with no variable encoding; the witness contains only the signature, with no public key (unlike SegWit).
 
-## Taproot Stack Execution: Key Path Spending
+## Key-Path Stack Execution
 
-Let's trace through the complete stack execution for our Taproot transaction:
+Trace of the stack for the transaction above:
 
 ### Initial State
 The transaction begins with an empty stack:
@@ -435,13 +338,7 @@ The scriptPubKey pushes the 32-byte output key:
 ```
 
 ### 3. Pattern Recognition: Bitcoin Core detects Taproot format
-Bitcoin Core recognizes the pattern `OP_1 <32-bytes>` and switches to Taproot execution mode:
-
-**Recognition Process:**
-1. **Version Check**: OP_1 = witness version 1
-2. **Length Check**: 32 bytes = Taproot format  
-3. **Execution Switch**: Load Taproot interpreter
-4. **Spending Path Detection**: Witness contains only signature = key path spending
+The pattern `OP_1 <32-bytes>` selects the Taproot interpreter. A witness containing only a signature selects the key path; a witness containing a script and control block selects the script path (covered in Chapter 6).
 
 ### 4. Load Witness: Extract Schnorr signature
 The witness stack contains only the signature:
@@ -453,13 +350,7 @@ The witness stack contains only the signature:
 ```
 
 ### 5. Schnorr Verification: Verify signature against output key
-The interpreter performs Schnorr signature verification:
-
-**Verification Algorithm:**
-1. **Parse signature**: Extract r and s values (32 bytes each)
-2. **Compute challenge**: `e = H(r || P || sighash)`
-3. **Compute verification point**: `R = s*G - e*P`
-4. **Verify**: `r == x-coordinate of R`
+The interpreter runs BIP340 verification: parse `(r, s)`, compute the challenge `e = tagged_hash("BIP0340/challenge", r ‖ P ‖ m)`, compute `R = s·G − e·P`, and accept if `r` equals the x-coordinate of `R`.
 
 **Verification Result:**
 ```
@@ -467,13 +358,9 @@ The interpreter performs Schnorr signature verification:
 └─────────────────────────────────────────┘
 ```
 
-**(Transaction valid - key path spending successful)**
+Verified — key-path spend.
 
-## The Power of Indistinguishability
-
-The revolutionary aspect of Taproot is demonstrated by comparing different transaction types:
-
-### Visual Comparison
+## Output Shape: Legacy → SegWit → Taproot
 
 ```
 Legacy P2PKH:
@@ -501,9 +388,9 @@ Taproot P2TR (Complex Contract):
    Information Revealed: Nothing about internal complexity
 ```
 
-**The Magic**: Both simple and complex Taproot transactions are **completely indistinguishable** until spent!
+The simple-Taproot row and the complex-Taproot row are byte-for-byte identical at the output level.
 
-## Programming Differences: Evolution from SegWit
+## SegWit → Taproot: Code Differences
 
 ```python
 # SegWit (P2WPKH) Pattern
@@ -530,60 +417,14 @@ def create_taproot_transaction():
     tx.witnesses.append(TxWitnessInput([signature]))
 ```
 
-**Key Programming Changes:**
-1. **Address Generation**: Must get public key first, then Taproot address
-2. **Signing Method**: `sign_taproot_input()` uses Schnorr signatures
-3. **Witness Structure**: Only signature needed, no public key
-4. **Script Format**: Uses arrays for scripts and amounts
+Two API changes are load-bearing: signing uses `sign_taproot_input()` (Schnorr, BIP340) instead of `sign_segwit_input()` (ECDSA), and the witness contains only the signature — the public key is already in the scriptPubKey as the output key.
 
-## The Cooperative Advantage
+## Cooperative vs Script Path: Cost Asymmetry
 
-Taproot creates powerful incentives for cooperation:
-
-```
-Cooperative Spending (Key Path):
-├── Parties: Alice, Bob, Charlie (all agree)
-├── Witness: [64-byte signature]
-├── Size: ~135 bytes
-├── Privacy: Maximum (looks like single-sig)
-└── Efficiency: Optimal
-
-Non-Cooperative Spending (Script Path):
-├── Parties: Alice, Bob, Charlie (dispute)
-├── Witness: [script_data, revealed_script, control_block]
-├── Size: ~200-500 bytes
-├── Privacy: Partial (reveals one condition)
-└── Efficiency: Reduced but still functional
-```
-
-**Economic Incentives:**
-- **Cooperation Rewards**: Smaller fees, better privacy
-- **Conflict Costs**: Larger transactions, reduced privacy
-- **Alignment**: Technical optimization aligns with economic cooperation
+Cooperative key-path spends produce a 64-byte witness regardless of how many parties are behind the output key. Script-path spends require revealing the leaf script and a control block (33 bytes for the internal pubkey + leaf depth × 32 bytes for the Merkle proof), so witness size scales with tree depth and revealed script length. The fee difference makes cooperation the cheaper path whenever it is available.
 
 ## Chapter Summary
 
-Taproot represents a paradigm shift in Bitcoin transactions through two key mathematical innovations:
+Taproot replaces ECDSA with BIP340 Schnorr (64 bytes, fixed length) and applies the BIP341 tweak `P' = P + t·G` to the output key. The tweak commits to either nothing (key-path-only) or a Merkle root over a script tree. On-chain, both cases produce the same shape — `OP_1 <32 bytes>` — and a key-path spend has the same 64-byte witness regardless of internal complexity.
 
-**Schnorr Signatures**: The linearity property enables key aggregation, single-signature output, and most importantly, key tweaking. This creates fixed 64-byte signatures that can represent any level of complexity while looking identical.
-
-**Key Tweaking (Tweakable Commitment)**: The mathematical relationship `P' = P + t*G` allows keys to be deterministically modified with script commitments, creating dual spending paths while maintaining cryptographic security.
-
-**The Result**: Complex smart contracts become **computationally and observationally identical** to simple payments, providing unprecedented privacy without sacrificing functionality.
-
-**The Privacy Revolution**: All Taproot transactions appear identical until spent, making it impossible to distinguish between:
-- Simple single-signature payments
-- Complex multi-party contracts  
-- Lightning Network operations
-- Corporate treasury transactions
-
-**The Efficiency Gains**: 
-- Smaller transaction sizes (64-byte signatures)
-- Faster verification (single signature check)
-- Reduced blockchain bloat (unused conditions stay private)
-
-**The Cooperative Incentives**: Taproot aligns economic incentives with technical optimization—cooperation becomes the most efficient choice.
-
-With key tweaking laying the cryptographic foundation, the next step is to explore how arbitrary smart contract conditions are compactly committed inside a Merkle tree — while remaining invisible until revealed.
-
-In our next chapter, we'll explore how Merkle trees organize complex script conditions behind these uniform appearances, showing how unlimited spending conditions can be committed to and proven without revealing unused alternatives.
+The next chapter shows how arbitrary spending conditions are organized into the script tree's Merkle structure, committed at output creation, and revealed only when actually used.
