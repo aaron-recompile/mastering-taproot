@@ -59,7 +59,7 @@ Bob independently derives the same address using `b_scan · A` — match confirm
 
 Alice sends 5000 sats to the one-time address:
 
-**Send transaction**: [b93523c5...f778e8](https://mempool.space/testnet/tx/b93523c5784080f1ca402bca39edda109e6e64c0df576c964e64630fb0f778e8)
+**Send transaction**: [b93523c5...b0f778e8](https://mempool.space/testnet/tx/b93523c5784080f1ca402bca39edda109e6e64c0df576c964e64630fb0f778e8?showDetails=true)
 
 On mempool.space:
 
@@ -78,7 +78,7 @@ p = b_spend + t
 p · G = (b_spend + t) · G = B_spend + t · G = P  [OK]
 ```
 
-**Spend transaction**: [11774714...b8d91b](https://mempool.space/testnet/tx/11774714227d2c8c787372efff666dd0a27b044766e503a6241d28d2e1b8d91b)
+**Spend transaction**: [11774714...e1b8d91b](https://mempool.space/testnet/tx/11774714227d2c8c787372efff666dd0a27b044766e503a6241d28d2e1b8d91b?showDetails=true)
 
 Bob sends 4846 sats to his regular address. On-chain: another ordinary Taproot transfer. No link to Bob's Silent Payment address.
 

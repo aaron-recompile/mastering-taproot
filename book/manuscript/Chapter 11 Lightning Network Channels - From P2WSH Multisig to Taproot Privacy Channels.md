@@ -56,7 +56,7 @@ Format: OP_0 <32-byte SHA256(witness_script)>
 
 **Funding transaction** (both parties sign and broadcast):
 
-[7c512abc...767a](https://mempool.space/testnet/tx/7c512abcdc86e48837e6e5ba57524c3ee25f1c4bd4bf7d42f7db084b2d09767a)
+[7c512abc...2d09767a](https://mempool.space/testnet/tx/7c512abcdc86e48837e6e5ba57524c3ee25f1c4bd4bf7d42f7db084b2d09767a?showDetails=true)
 
 - vout:0: `tb1qztxpf2...393urj`, 10,000 sats, P2WSH
 - Observer sees: `OP_0 <32-byte hash>` — a SegWit v0 script hash output, almost certainly multisig
@@ -80,7 +80,7 @@ tx.witnesses.append(TxWitnessInput([
 
 **Cooperative close transaction**:
 
-[bd6da1cd...0461](https://mempool.space/testnet/tx/bd6da1cdd3740661875b2568c2b4494f818c3c3742f809e23512c43f52840461)
+[bd6da1cd...52840461](https://mempool.space/testnet/tx/bd6da1cdd3740661875b2568c2b4494f818c3c3742f809e23512c43f52840461?showDetails=true)
 
 On-chain witness structure:
 
@@ -167,7 +167,7 @@ funding_addr = funding_pub.get_taproot_address()
 
 **Funding transaction** (Alice and Bob lock 10,000 sats into the MuSig2 aggregate + BIP86 output):
 
-[b7efde1f...aace](https://mempool.space/testnet/tx/b7efde1f1659a6a48d998c7860d9a586ac65c6069e73ded9779f1f6e1898aace)
+[b7efde1f...1898aace](https://mempool.space/testnet/tx/b7efde1f1659a6a48d998c7860d9a586ac65c6069e73ded9779f1f6e1898aace?showDetails=true)
 
 - vout:1: `tb1pnn82l6...9m8uvc`, 10,000 sats, P2TR
 - Observer sees: `OP_1 <32-byte key>` — an ordinary Taproot address. Could be anything.
@@ -277,7 +277,7 @@ tx.witnesses.append(TxWitnessInput([final_sig.hex()]))
 
 **MuSig2 cooperative close transaction**:
 
-[af6fdae8...9d1f](https://mempool.space/testnet/tx/af6fdae8c2731b2b83e74b8dd79bc2c241dea8aee8c8cfb6f094e44c13b39d1f)
+[af6fdae8...13b39d1f](https://mempool.space/testnet/tx/af6fdae8c2731b2b83e74b8dd79bc2c241dea8aee8c8cfb6f094e44c13b39d1f?showDetails=true)
 
 On-chain witness structure:
 

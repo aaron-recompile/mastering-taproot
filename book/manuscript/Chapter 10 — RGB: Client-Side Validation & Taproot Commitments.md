@@ -73,7 +73,7 @@ RGB uses single-use seals to bind state to a specific UTXO. A seal points to a p
 
 The following experiment runs on Bitcoin testnet — Alice transfers 100 units of an RGB20 asset to Bob.
 
-**Transfer transaction**: [64a14551...c20b6b](https://mempool.space/testnet/tx/64a1455125724ce79d4914d7af5e0226f465c7522b8dd6f048440b8935c20b6b)
+**Transfer transaction**: [64a14551...35c20b6b](https://mempool.space/testnet/tx/64a1455125724ce79d4914d7af5e0226f465c7522b8dd6f048440b8935c20b6b?showDetails=true)
 
 On mempool.space:
 

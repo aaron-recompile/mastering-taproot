@@ -50,7 +50,7 @@ BRC-20 uses the same structure, but specifies conventions for the JSON fields (`
 
 The following two testnet transactions are the basis for this section's analysis:
 
-**Commit**: [515ddcfc...1f950aa0](https://mempool.space/testnet/tx/515ddcfc2ddb5ebadb6be493a955e490c54d399cf2cc528cecc302e41f950aa0)
+**Commit**: [515ddcfc...1f950aa0](https://mempool.space/testnet/tx/515ddcfc2ddb5ebadb6be493a955e490c54d399cf2cc528cecc302e41f950aa0?showDetails=true)
 
 | Field | Value |
 |---|---|
@@ -62,7 +62,7 @@ The following two testnet transactions are the basis for this section's analysis
 
 The inscription content is indirectly committed into the output public key via the Taproot tweak; no JSON is visible on-chain.
 
-**Reveal**: [2fc169a5...fff57547](https://mempool.space/testnet/tx/2fc169a5eb2f096bc8e64cb946380869ee2a2099f67cc3d5e719fbe9fff57547)
+**Reveal**: [2fc169a5...fff57547](https://mempool.space/testnet/tx/2fc169a5eb2f096bc8e64cb946380869ee2a2099f67cc3d5e719fbe9fff57547?showDetails=true)
 
 | Field | Value |
 |---|---|
