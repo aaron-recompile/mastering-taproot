@@ -1,97 +1,72 @@
-# Chapter 6: Building Real Taproot Contracts - Single-Leaf Hash Lock and Dual-Path Spending
+# Chapter 6: Building Real Taproot Contracts — Single-Leaf Hash Lock and Dual-Path Spending
 
-## Why Script Path Changes Everything
+Chapter 5 built a Taproot output that committed to nothing — a key-path-only address, where the only way to spend was Alice's tweaked key. This chapter adds the other half of Taproot: a script path. We give one address two independent ways to spend, and confirm that on-chain it still looks like an ordinary payment until the moment someone spends it.
 
-What if you could build a contract on Bitcoin that looks like a simple payment—until it reveals a puzzle that unlocks funds?
+The contract is deliberately small — a single script that releases funds to anyone who knows a secret word — so the mechanics stay in view. Everything here carries over to the multi-leaf trees of Chapters 7–8; this is the one-leaf version of the same machinery.
 
-Imagine this: you want to create a digital bounty where anyone who solves a puzzle gets rewarded, but if no one solves it, you want to reclaim your funds. Or you're selling digital goods where buyers automatically get unlock keys after payment, but you retain refund control.
+## The Scenario: A Conditional Payment
 
-Traditional Bitcoin scripts either completely expose all conditions (compromising privacy) or require complex multi-signature setups (inefficient). Worse yet, even simple single-signature payments can be easily identified by their transaction patterns on the blockchain.
+Alice wants an address that can be spent two ways:
 
-**Taproot's Script Path makes all this elegant**: complex conditional contracts look identical to ordinary payments when unspent, revealing only the necessary execution path when needed.
+- **Conditional path**: anyone who knows the secret word "helloworld" can claim the funds.
+- **Owner path**: Alice can reclaim the funds at any time with her private key.
+- **Privacy**: while unspent, the address is indistinguishable from any ordinary Taproot payment.
 
-Building on the Taproot theoretical foundation established in previous chapters, we'll now dive deep into Script Path spending patterns. This chapter demonstrates how to implement dual-path authorization in Taproot's script tree through a practical conditional payment scenario: supporting both secret-based conditional payments and direct key holder control.
+This two-path shape turns up constantly. A few cases that reduce to exactly the same structure:
 
-## Business Scenario: Alice's Conditional Payment Contract
+| Use case | How the two paths map |
+|----------|-----------------------|
+| Digital goods sales | Buyer unlocks with a key after payment; seller keeps a refund path |
+| Bounty tasks | Whoever solves the puzzle claims the reward; the publisher can reclaim an unclaimed bounty |
+| Conditional escrow | Funds release when a condition is met; otherwise the owner reclaims them |
+| Educational incentives | A student claims a reward on a correct answer; the teacher keeps a management path |
 
-Let's start with a concrete business scenario to understand the practical value of Taproot Script Path:
+## Two Spending Paths
 
-Alice wants to create a conditional payment contract with these characteristics:
+Alice's Taproot address carries two ways to spend, and they cost — and reveal — very different things.
 
-- **Conditional Path**: Anyone who knows the secret word "helloworld" can claim the funds
-- **Alternative Path**: Alice, as the fund owner, can reclaim her funds at any time using her private key
-- **Privacy Requirement**: When unspent, external observers cannot distinguish between simple payments and complex contracts
+**Key path.** Alice signs with her tweaked private key. One 64-byte Schnorr signature, nothing about the script revealed. This is the cheap, private path from Chapter 5.
 
-This dual-path design is extremely common in real applications:
+**Script path.** The hash-lock script `OP_SHA256 <hash> OP_EQUALVERIFY OP_TRUE`. Anyone who can produce the preimage "helloworld" can spend it. Taking this path reveals the script you used — but nothing about the key path, and nothing about any other branch the tree might have held.
 
-| **Application Scenario** | **Description** |
-|-------------------------|----------------|
-| **Digital Goods Sales** | Buyer gets unlock keys after payment; seller retains refund authority |
-| **Bounty Tasks** | Puzzle solvers claim reward; unused bounty can be reclaimed by publisher |
-| **Conditional Escrow** | Automatically releases under specific conditions; owner can reclaim otherwise |
-| **Educational Incentives** | Students claim reward upon correct answers; teachers retain management control |
+That asymmetry is the whole design: the key path is the quiet default; the script path is there for when you actually need the condition, and it only ever exposes the one branch you take.
 
-## Taproot Dual-Path Architecture
+## The Commit–Reveal Pattern
 
-In our scenario, Alice's Taproot address contains two spending paths:
+Almost everything we do with Taproot follows one shape, worth naming before any code: **commit, then reveal.**
 
-**Key Path (Collaborative Path)**:
-- Alice signs directly with her tweaked private key
-- 64-byte Schnorr signature, maximum efficiency
-- Complete privacy, no script information leakage
+**Commit.** You fold one or more spending conditions into a script tree, commit that tree into a single Taproot address, and fund it. From the outside the address is just 32 bytes — no one can tell which conditions it carries, or even whether it carries any.
 
-**Script Path (Script Path)**:
-- Uses Hash Lock script: `OP_SHA256 <hash> OP_EQUALVERIFY OP_TRUE`
-- Anyone who knows the preimage "helloworld" can spend
-- Requires revealing script content, but doesn't expose Key Path existence
+**Reveal.** When you spend, you pick one path. The key path reveals nothing. The script path reveals exactly the one leaf you used — and leaves every other branch hidden for good.
 
-## Taproot's Commit-Reveal Development Pattern
+What makes the pattern pay off: at commit time, contracts of wildly different complexity all look identical on-chain. At reveal time, you pay — in bytes and in privacy — only for the single branch you actually take.
 
-Before diving into code implementation, we need to understand Taproot's core development pattern: **Commit-Reveal**. This pattern will become the fundamental development model for all our subsequent Taproot applications.
+## Single-Leaf Hash Lock: From Commit to Reveal
 
-### Commit-Reveal Pattern Overview
+We'll build the smallest possible tree — one leaf — so nothing distracts from the commit→reveal flow:
 
-**Commit Phase**:
-- Build script tree containing multiple spending conditions
-- Commit script tree to a Taproot address
-- Generate "intermediate address" or "custody address" to lock funds
-- **External parties cannot know** specific spending conditions
+- **Hash-lock script**: checks the SHA256 of the secret word "helloworld".
+- **Single-leaf tree**: the simplest script tree there is, one leaf.
+- **Two paths**: key path (Alice's direct control) plus script path (the conditional spend).
 
-**Reveal Phase**:
-- Choose one spending condition for unlocking
-- Key Path: Spend directly with key (maximum privacy)
-- Script Path: Reveal and execute specific leaf script
-- **Only expose actually used conditions**, other conditions remain private forever
+### Tagged Hash
 
-The power of this pattern lies in: During Commit phase, all contracts of different complexity look identical; During Reveal phase, only the actually used leaf script needs to be exposed.
-
-## Single Leaf Hash Lock Script: From Commit to Reveal
-
-Let's learn the complete implementation flow of Taproot single leaf scripts through a simple Hash Lock case. Based on Alice's conditional payment scenario introduced earlier, we'll implement:
-
-- **Hash Lock Script**: Verify hash value of secret word "helloworld"
-- **Single Leaf Structure**: Simplest script tree containing only one leaf script
-- **Dual Path Spending**: Key Path (Alice's direct control) + Script Path (conditional spending)
-
-### What is Tagged Hash?
-
-Before entering specific implementation, we need to understand an important concept: **Tagged Hash**. This is a hashing method introduced by BIP340 that adds tag prefixes for different purposes:
+One building block first. BIP340 runs everything through a *tagged* hash — a SHA256 with a purpose label folded in:
 
 ```python
 def tagged_hash(tag, data):
     tag_hash = hashlib.sha256(tag.encode()).digest()
     return hashlib.sha256(tag_hash + tag_hash + data).digest()
 
-# Examples:
-# tagged_hash("TapLeaf", script_data) for calculating script leaf hash
-# tagged_hash("TapTweak", pubkey + merkle_root) for calculating tweak value
+# tagged_hash("TapLeaf", script_data)          -> a script leaf hash
+# tagged_hash("TapTweak", pubkey + merkle_root) -> the tweak
 ```
 
-This design prevents hash collisions between different protocols, greatly enhancing security. Each tag has its specific purpose, ensuring hash values from different contexts never accidentally duplicate.
+The label is what keeps a leaf hash from ever colliding with a tweak, or with a signature hash — even on identical input. Each tag carves out its own domain, so hashes computed for different purposes can never accidentally line up. (We walked this construction byte by byte earlier; "TapLeaf" and "TapTweak" are just two different labels feeding the same machine.)
 
-### Phase 1: Commit Phase - Build Intermediate Address to Lock Funds
+### Phase 1 — Commit: lock the funds behind an address
 
-First, Alice needs to commit her Hash Lock script to a Taproot address:
+First Alice commits the hash-lock script into a Taproot address:
 
 ```python
 def build_hash_lock_script(preimage):
@@ -124,46 +99,51 @@ def create_taproot_commitment():
     return taproot_address, hash_lock_script, internal_private
 ```
 
-**Key Technical Points Analysis:**
+Three things happen under that `get_taproot_address` call. Walking them out:
 
-1. **Script Serialization**:
-    ```
-    a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af8851
-    ```
-    - `a8`: OP_SHA256
-    - `20`: PUSH 32 bytes
-    - `936a185c...07af`: SHA256("helloworld")
-    - `88`: OP_EQUALVERIFY
-    - `51`: OP_TRUE
+**1. The script serializes to bytes.**
 
-2. **TapLeaf Hash Calculation**:
-    ```python
-    # Merkle root for single leaf script
-    script_data = bytes.fromhex("a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af8851")
-    leaf_version = 0xc0
-    tapleaf_hash = tagged_hash("TapLeaf", leaf_version + len(script_data) + script_data)
-    merkle_root = tapleaf_hash  # Single leaf case
-    ```
+```
+a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af8851
+```
 
-3. **Output Key Generation**:
-    ```python
-    # BIP341 formula: Q = P + H("TapTweak" || p || merkle_root) * G where p = c[1:33] (ie x coordinate of pubkey) and P = lift_x(int(p)) (ie even Y x,y point on curve) where lift_x and [:] are defined as in BIP340.
-    internal_pubkey = bytes.fromhex("50be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3")
-    tweak = tagged_hash("TapTweak", internal_pubkey + merkle_root)
-    output_key = point_add(internal_pubkey, scalar_mult(tweak, G))
-    ```
+- `a8`: OP_SHA256
+- `20`: PUSH 32 bytes
+- `936a185c...07af`: SHA256("helloworld")
+- `88`: OP_EQUALVERIFY
+- `51`: OP_TRUE
 
-**Generated Intermediate Address**: `tb1p53nc...kd43h`
+**2. The serialized script becomes a TapLeaf hash, which — for a single leaf — is the whole Merkle root.**
+
+```python
+script_data = bytes.fromhex("a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af8851")
+leaf_version = 0xc0
+tapleaf_hash = tagged_hash("TapLeaf", bytes([leaf_version]) + bytes([len(script_data)]) + script_data)
+merkle_root = tapleaf_hash  # one leaf, so the root is the leaf
+```
+
+**3. The Merkle root tweaks the internal key into the output key** — the same `Q = P + t·G` from Chapter 5, now with a real Merkle root in the tweak instead of an empty commitment:
+
+```python
+# BIP341: Q = P + H("TapTweak" || p || merkle_root) * G, where p is the x-only internal key
+internal_pubkey = bytes.fromhex("50be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3")
+tweak = tagged_hash("TapTweak", internal_pubkey + merkle_root)
+output_key = point_add(internal_pubkey, scalar_mult(tweak, G))
+```
+
+The result is the address funds get sent to:
 
 ```text
 tb1p53ncq9ytax924ps66z6al3wfhy6a29w8h6xfu27xem06t98zkmvsakd43h
 ```
 
-This is our **intermediate address** or **custody address** where funds are locked. The corresponding ScriptPubKey: `OP_1 <32-byte-output-key>`, is completely indistinguishable from any other Taproot address on the blockchain. External observers cannot distinguish whether this is a simple single-signature or complex conditional contract.
+Its ScriptPubKey is just `OP_1 <32-byte-output-key>` — byte-for-byte the same shape as every other Taproot address on chain. Nothing about it tells an observer whether it's a plain single-sig or a conditional contract. That indistinguishability is exactly what the commit phase buys.
 
-### Phase 2: Reveal Phase - Key Path Spending (Alice's Direct Control)
+### Phase 2 — Reveal via the key path (Alice reclaims)
 
-If Alice decides to directly reclaim her funds, she can use Key Path spending:
+One thing to set up before we spend: the next two phases each demonstrate *one* path — key path here, script path next. A UTXO can only be spent once, so these are not the same coin spent two ways; each path is shown on its own separate funding of the same address. That's why the input txids differ — `4fd83128…` here, `9e193d8c…` in Phase 3.
+
+If Alice just wants her funds back, she takes the key path:
 
 ```python
 def alice_key_path_spending():
@@ -192,7 +172,7 @@ def alice_key_path_spending():
     )
     tx = Transaction([txin], [txout], has_segwit=True)
 
-    # **Key Point**: Key Path signature needs script tree info to calculate tweak
+    # Key Path signature still needs the script tree to compute the tweak
     sig = alice_private.sign_taproot_input(
         tx,
         0,
@@ -214,27 +194,19 @@ tx = alice_key_path_spending()
 # Output: Key Path Transaction ID: 2a13de71b3eb9c5845bc9aed56de0efd7d8f1e5e02debb0e9b3464a4ad940d05
 ```
 
-**Key Path Characteristics Analysis**:
-- **Witness Size**: 64 bytes (fixed-size Schnorr signature)
-- **Privacy Level**: Complete privacy, no script information leakage
-- **Execution Efficiency**: Highest efficiency, single signature verification
-- **Appearance**: Identical to any simple Taproot payment
+The key-path spend looks exactly like Chapter 5's: a single 64-byte Schnorr signature in the witness, indistinguishable from any plain Taproot payment, verified in one check. The script never appears.
 
-**Important Technical Detail**: Even when using Key Path, the signing function still needs the `tapleaf_scripts` parameter to calculate the correct tweak value. This is because Taproot's output key is generated through both internal public key and script tree.
+One detail is easy to miss. Even on the key path, the signer still passes `tapleaf_scripts`. That's because the output key was tweaked by the Merkle root at commit time — so to sign *for* the output key, Alice has to reconstruct the same tweak, which means she needs the script tree even though she never reveals it. `script_path=False` hides the bookkeeping, but underneath it's the Chapter 5 identity at work:
 
-**Key Path Signing Principle**: Alice needs to sign with the tweak-adjusted private key to unlock funds. Essentially, this is also restoring the intermediate address process. Although the `script_path=False` parameter lets the library hide these details, the underlying principle is:
+- **Public keys**: `output_pubkey = internal_pubkey + tweak · G`
+- **Private keys**: `tweaked_private = internal_private + tweak`
+- Because Schnorr is linear, those two stay a matched pair — Alice's tweaked private key signs for the output key.
 
-- **Public Key Linear Correspondence**: `output_pubkey = internal_pubkey + tweak * G`
-- **Private Key Linear Correspondence**: `tweak_private = internal_private + tweak`
-- **Schnorr Signature Property**: This linear relationship ensures key pair consistency
+This is the linearity from Chapter 5, doing the one job everything else depends on.
 
-This is exactly the advantage of Schnorr signatures over ECDSA: supporting linear combination and aggregation of keys.
+### Phase 3 — Reveal via the script path (the conditional unlock)
 
-### Phase 3: Reveal Phase - Script Path Spending (Conditional Unlock)
-
-Now let's implement the complete code for Script Path spending. Unlike Key Path's simplicity, Script Path requires building more complex witness data to prove we have the right to use a specific leaf script.
-
-### Script Path Spending Code Implementation
+The script path is where the new work is. Instead of one signature, the witness has to carry enough to prove that a specific leaf really lives in the committed tree, plus the input the script needs to run.
 
 ```python
 def script_path_spending():
@@ -283,11 +255,9 @@ def script_path_spending():
     return tx
 ```
 
-### Detailed Key Implementation Analysis
+Three pieces of that witness deserve a closer look.
 
-Let's dive deep into the implementation principles of each key component:
-
-**1. Control Block Construction**
+**1. The control block.**
 
 ```python
 control_block = ControlBlock(
@@ -297,8 +267,6 @@ control_block = ControlBlock(
     is_odd=taproot_address.is_odd()  # Parity: y-coordinate parity of output key
 )
 ```
-
-**Control Block Structure Diagram**:
 
 ```
 Control Block Structure (33 bytes):
@@ -310,52 +278,49 @@ Control Block Structure (33 bytes):
 │Ver/Parity│         Internal Pubkey          │
 └──────────┴──────────────────────────────────┘
 
-Analysis:
 - c1 = c0 (leaf version) + 01 (parity flag)
-- Internal pubkey: Used to recalculate output key during verification
+- Internal pubkey: lets a verifier recompute the output key
 ```
 
-**Technical Points**:
-- **Internal Public Key**: This is the original public key before tweak adjustment, used to recalculate output key during verification
-- **Script Tree Structure**: `[[tr_script]]` represents a script tree with only one leaf, multiple scripts would be `[[script1], [script2]]`
-- **Script Index**: Identifies which script to use in multi-script tree, always 0 for single script
-- **Parity Flag**: Elliptic curve point's y-coordinate can be odd or even, needs recording for complete reconstruction
+The control block is the proof that this script belongs to the address. It carries:
 
-**2. Precise Order of Witness Data**
+- **Internal public key** — the untweaked key, so a verifier can redo the tweak and check it lands on the output key.
+- **Script tree structure** — `[[tr_script]]` is a one-leaf tree; multiple scripts would be `[[script1], [script2]]`, and the block would then also carry the sibling hashes needed to walk back up to the root.
+- **Script index** — which leaf this is; always 0 for a single leaf.
+- **Parity flag** — the output point's y-coordinate is odd or even, and a verifier needs that bit to reconstruct the full point. Read it off the address with `is_odd()` — don't guess it.
+
+**2. Witness order.**
 
 ```python
 script_path_witness = TxWitnessInput([
-    preimage_hex,              # Position [0]: Input parameters for script execution
-    tr_script.to_hex(),        # Position [1]: Script code to execute
-    control_block.to_hex()     # Position [2]: Control block proving script legitimacy
+    preimage_hex,              # [0] input to the script
+    tr_script.to_hex(),        # [1] the script itself
+    control_block.to_hex()     # [2] the control block
 ])
 ```
 
-**Order Importance**:
-- Bitcoin Core parses witness data in fixed order
-- Position `[n-1]`: Control block (last element)
-- Position `[n-2]`: Script code (second to last)
-- Positions `[0...n-3]`: Input parameters for script execution
+Bitcoin Core reads the script-path witness from the bottom up, and the positions are fixed:
 
-**3. Hexadecimal Encoding of Preimage**
+- last element: the control block
+- second-to-last: the script
+- everything before that: the inputs the script consumes, in order
+
+For our one-input hash lock that's just `[preimage, script, control_block]`. A handy way to remember it: **data → code → proof.**
+
+**3. The preimage is hex-encoded bytes.**
 
 ```python
 preimage_hex = preimage.encode('utf-8').hex()
 # "helloworld" -> bytes -> "68656c6c6f776f726c64"
 ```
 
-**Encoding Principle**:
-- Bitcoin Script processes hexadecimal byte data
-- Strings must first be encoded to UTF-8 bytes, then converted to hexadecimal
-- This ensures OP_SHA256 in script can correctly process input data
+Script works on byte strings, not text. So "helloworld" goes to UTF-8 bytes first, then to hex — and that's what `OP_SHA256` hashes when the script runs.
 
-### Actual Transaction Execution Result Analysis
+#### Checking it against the chain
 
-After running the above code, we can observe real transactions on testnet:
+The transaction lands on testnet:
 
 **Transaction ID**: [`68f7c8f0...722e604f`](https://mempool.space/testnet/tx/68f7c8f0ab6b3c6f7eb037e36051ea3893b668c26ea6e52094ba01a7722e604f?showDetails=true)
-
-**Witness Data Analysis**:
 
 ```bash
 Witness Stack:
@@ -364,7 +329,7 @@ Witness Stack:
 [2] c150be5f...d126bb4d3                    (control_block)
 ```
 
-Let's verify the correctness of this data:
+We can check each layer the way a node would. First, that the preimage really hashes to what the script expects:
 
 ```python
 def verify_preimage_and_script_execution():
@@ -391,9 +356,9 @@ def verify_preimage_and_script_execution():
 verify_preimage_and_script_execution()
 ```
 
-After verifying script legitimacy and preimage correctness, we also need: **Control Block Verification** -> Prove script is in Merkle root, **Address Restoration Verification** -> Verify legitimacy through tweak, and finally **Stack Execution** -> Execute script logic. These are also Bitcoin Core's verification steps.
+That's the script's own check. A node does more: it confirms the **control block** proves the script sits under the Merkle root, restores the **address** from the internal key and that root, and only then runs the **script** on the stack. The next two checks mirror the first two of those.
 
-### Control Block Verification - Prove Script is in Merkle Tree
+**Control block — is the script really under the Merkle root?**
 
 ```python
 def verify_script_in_merkle_tree():
@@ -429,7 +394,7 @@ def verify_script_in_merkle_tree():
 internal_pubkey, merkle_root = verify_script_in_merkle_tree()
 ```
 
-### Address Restoration Verification - Verify Legitimacy Through Tweak
+**Address restoration — does the tweak land back on the committed address?**
 
 ```python
 def verify_taproot_address_restoration():
@@ -456,94 +421,64 @@ def verify_taproot_address_restoration():
 verify_taproot_address_restoration()
 ```
 
-## Script Path Spending Failed? Debug This Way
+Restoring the address is the same tweak from Phase 1, run in reverse as a check: take the internal key from the control block, the Merkle root from the revealed script, recompute the tweak, and confirm it rebuilds the address the funds were sent to. If it does, the script is genuinely committed and the spend is legitimate.
 
-If you encounter Script Path spending failures, follow this systematic debugging approach:
+## When Script-Path Spending Fails: A Checklist
 
-### Debug Flowchart: "Script Path Spending Failed? Try This"
+Script-path spends fail in a small number of predictable ways. When one does, work down this list.
 
-**Step 1: Check Witness Stack Order**
+**1. Witness order.** It must be `[preimage, script, control_block]` — data, then code, then proof. The two common wrong orders:
+
 ```
-[Correct] [preimage, script, control_block]
-[Wrong] [control_block, script, preimage]
-[Wrong] [script, preimage, control_block]
+[correct] [preimage, script, control_block]
+[wrong]   [control_block, script, preimage]
+[wrong]   [script, preimage, control_block]
 ```
 
-**Step 2: Verify Script Consistency**
-- Does reveal phase script EXACTLY match commit phase script?
-- Are all parameters (hash values, opcodes) identical?
-- Use the same `build_hash_lock_script()` function for both phases
-
-**Step 3: Validate Control Block**
-- Is internal pubkey correct?
-- Is parity flag (`is_odd`) set properly? -> Get from `taproot_address.is_odd()`
-- Does script index match tree position? (0 for single leaf)
-
-**Step 4: Check Input Data Encoding**
-- Is preimage properly UTF-8 encoded then hex converted?
-- Example: `"helloworld" -> bytes -> "68656c6c6f776f726c64"`
-
-**Step 5: Address Restoration Test**
-- Can you rebuild the same Taproot address from internal key + script tree?
-- Do tweak calculations match between commit and reveal phases?
-
-### 1. Witness Data Order Errors
+**2. Script consistency.** The script you reveal must be byte-for-byte the script you committed — same opcodes, same hash. The reliable way to guarantee that is to build both with the same function:
 
 ```python
-# [Wrong] Wrong order - this will cause verification failure
-witness = [control_block, script, preimage]  
-
-# [Wrong] Another wrong order
-witness = [script, preimage, control_block]
-
-# [Correct] Correct order
-witness = [preimage, script, control_block]
-```
-
-**Quick Fix**: Always remember "Data -> Code -> Proof" order for Script Path witnesses.
-
-### 2. Script Serialization Issues
-
-```python
-# [Wrong] Direct use of strings
-script_hex = "OP_SHA256 936a185c... OP_EQUALVERIFY OP_TRUE"
-
-# [Correct] Use proper Script object and .to_hex()
-script = build_hash_lock_script(preimage)
-script_hex = script.to_hex()  # Produces: "a820936a185c...8851"
-```
-
-### 3. Control Block Parity Errors
-
-```python
-# [Wrong] Manual calculation or hardcoded values
-is_odd = True  # Don't guess!
-
-# [Correct] Always get from address object
-is_odd = taproot_address.is_odd()
-control_block = ControlBlock(..., is_odd=is_odd)
-```
-
-### 4. Commit-Reveal Inconsistency
-
-```python
-# [Best Practice] Use consistent helper functions
 def build_hash_lock_script(preimage):
     hash_value = hashlib.sha256(preimage.encode('utf-8')).hexdigest()
     return Script(['OP_SHA256', hash_value, 'OP_EQUALVERIFY', 'OP_TRUE'])
 
-# Use SAME function in both commit and reveal phases
 commit_script = build_hash_lock_script("helloworld")
-reveal_script = build_hash_lock_script("helloworld")  # Guaranteed consistency
+reveal_script = build_hash_lock_script("helloworld")  # same bytes by construction
 ```
 
-## Script Path Spending Stack Execution Animation
+**3. Control block.** Internal pubkey correct? Script index matching the leaf's position (0 for a single leaf)? And the parity flag read from the address, not guessed:
 
-Next, let's observe the complete stack execution process of Hash Lock script:
+```python
+# wrong — guessing
+is_odd = True
 
-**Executing Script**: `OP_SHA256 OP_PUSHBYTES_32 936a185c...07af OP_EQUALVERIFY OP_PUSHNUM_1`
+# right — read it off the address
+is_odd = taproot_address.is_odd()
+control_block = ControlBlock(..., is_odd=is_odd)
+```
 
-### 0. Initial Stack State: Load Script Input
+**4. Input encoding.** The preimage has to be UTF-8 bytes, then hex: `"helloworld" -> "68656c6c6f776f726c64"`.
+
+**5. Address restoration.** As a final test, rebuild the Taproot address from the internal key plus the script tree. If the commit-phase and reveal-phase tweaks don't produce the same address, something upstream doesn't match.
+
+One more failure mode worth calling out separately — passing the script as a string instead of a serialized `Script`:
+
+```python
+# wrong — a human-readable string is not what goes in the witness
+script_hex = "OP_SHA256 936a185c... OP_EQUALVERIFY OP_TRUE"
+
+# right — serialize a Script object
+script = build_hash_lock_script(preimage)
+script_hex = script.to_hex()  # "a820936a185c...8851"
+```
+
+## Stack Execution: Walking the Hash Lock
+
+Here's the script running, one opcode at a time.
+
+**Script**: `OP_SHA256 OP_PUSHBYTES_32 936a185c...07af OP_EQUALVERIFY OP_PUSHNUM_1`
+
+**Start** — the witness loads the preimage onto the stack:
 
 ```
 | 68656c6c6f776f726c64                             |
@@ -551,9 +486,7 @@ Next, let's observe the complete stack execution process of Hash Lock script:
 └──────────────────────────────────────────────────┘
 ```
 
-### 1. OP_SHA256: Calculate SHA256 Hash of Stack Top Element
-
-OP_SHA256 pops the preimage data from stack top, calculates its SHA256 hash, then pushes result back to stack:
+**OP_SHA256** — pops the preimage, pushes its SHA256:
 
 ```
 | 936a185c...f8f8f07af  |
@@ -561,11 +494,9 @@ OP_SHA256 pops the preimage data from stack top, calculates its SHA256 hash, the
 └───────────────────────┘
 ```
 
-**(Calculation Process: SHA256("helloworld") = 936a185c...07af)**
+(SHA256("helloworld") = 936a185c...07af)
 
-### 2. PUSH 32 bytes: Push Expected Hash Value
-
-Script pushes preset expected hash value to stack top:
+**PUSH 32 bytes** — the script pushes its baked-in expected hash:
 
 ```
 | 936a185c...f8f8f07af  |
@@ -575,92 +506,68 @@ Script pushes preset expected hash value to stack top:
 └───────────────────────┘
 ```
 
-**(Two identical hash values now in stack)**
-
-### 3. OP_EQUALVERIFY: Verify Hash Values Equal
-
-OP_EQUALVERIFY pops top two elements for comparison, continues execution if equal, otherwise script fails:
+**OP_EQUALVERIFY** — pops the top two, compares; equal, so execution continues and both are consumed:
 
 ```
 | (empty_stack) |
 └───────────────┘
 ```
 
-**(Verification Success: 936a185c...07af == 936a185c...07af, both elements consumed)**
-
-### 4. OP_TRUE: Push Success Flag
-
-Finally, OP_TRUE (OP_PUSHNUM_1) pushes value 1 to stack, marking successful script execution:
+**OP_TRUE** — pushes 1, leaving a non-zero top of stack, which is what marks the script as satisfied:
 
 ```
 | 01 (true_value) |
 └─────────────────┘
 ```
 
-**(Script Execution Success: Stack top is non-zero value)**
+## Key Path vs Script Path
 
-## Key Path vs Script Path: Comparison of Two Spending Methods
+The two paths, side by side on the numbers we just produced:
 
-Through actual code implementation and on-chain data analysis, we can clearly see the differences between the two spending methods:
+### Key path
 
-### Key Path
+- Witness: 1 element (64-byte signature)
+- Transaction size: ~153 bytes
+- Privacy: complete — nothing about the script revealed
+- Verification: one Schnorr check
+- Fee: lowest
 
-- Witness Data: 1 element (64-byte signature)
-- Transaction Size: ~153 bytes
-- Privacy Level: Complete privacy, zero information leakage
-- Verification Complexity: Single Schnorr signature verification
-- Fee Cost: Lowest cost
+### Script path
 
-### Script Path
+- Witness: 3 elements (input + script + control block)
+- Transaction size: ~234 bytes
+- Privacy: partial — only the executed leaf is revealed
+- Verification: control-block check, then script execution
+- Fee: higher (~50% more here)
 
-- Witness Data: 3 elements (input + script + control block)
-- Transaction Size: ~234 bytes
-- Privacy Level: Partial privacy, only exposes used leaf script
-- Verification Complexity: Control block verification + script execution
-- Fee Cost: Medium cost (~50% additional overhead)
+The script path costs more bytes and gives up some privacy — but only for the one branch you use. Every other branch you might have committed stays hidden. That selective reveal is what lets one Taproot address back digital goods sales, bounties, escrow, multi-party contracts, and still look like a plain payment until the moment it's spent.
 
-This **selective reveal** design enables Taproot to support various complex application scenarios: digital goods sales, bounty tasks, conditional escrow, multi-party contracts, etc., while maintaining maximum privacy when unused.
+## How This Differs from P2SH
 
-## The Privacy Revolution: What Makes Taproot Different
+The contrast with P2SH is the sharpest way to see what the script path actually buys.
 
-Unlike P2SH, where **all conditions are revealed** when spending, Taproot Script Path ensures only the executed leaf script is ever seen. This fundamental shift redefines Bitcoin's privacy model for contracts.
+In P2SH, spending reveals the entire redeem script — every branch, including the ones you didn't take. An observer learns the whole contract the first time it's used.
 
-**Traditional Script Limitations:**
-- All spending conditions visible on-chain
-- Complex contracts easily identifiable by observers
-- Privacy compromised even for unused branches
+Taproot's script path reveals only the leaf you executed. Unused branches are never published; they exist only as hashes folded into the Merkle root, and the chain never sees them. And until the address is spent at all, it's indistinguishable from an ordinary single-sig payment.
 
-**Taproot's Privacy Innovation:**
-- Unused conditions remain hidden forever
-- Complex contracts indistinguishable from simple payments
-- Only executed logic revealed, preserving maximum privacy
-
-This privacy-first design makes Taproot the foundation for Bitcoin's next generation of smart contracts, where complexity doesn't compromise confidentiality.
+So the difference is concrete, not a slogan: P2SH exposes the contract, Taproot exposes one path through it. For contracts with multiple conditions — most real ones — that is a large reduction in what leaks on chain.
 
 ## Chapter Summary
 
-Through Alice's Hash Lock contract case, we deeply understand Taproot's revolutionary approach to Bitcoin smart contracts:
+We built Alice's hash-lock contract end to end and saw the commit–reveal pattern in full.
 
-### Power of Commit-Reveal Pattern
+**Commit and reveal.** At commit time, a conditional contract folds into an ordinary-looking Taproot address that locks the funds. At reveal time, Alice picks a path — key path or script path — and exposes only what that path requires.
 
-1. **Commit Phase**: Commit complex conditional logic to an ordinary Taproot address, generate intermediate address to lock funds
-2. **Reveal Phase**: Choose Key Path or Script Path spending based on actual needs, only expose necessary information
+**What the implementation came down to:**
 
-### Technical Implementation Mastery
+- **Single-leaf tree** — with one leaf, the TapLeaf hash *is* the Merkle root; no further Merkle math needed.
+- **Control block** — proves a script is committed by restoring the address from the internal key and the script's leaf hash.
+- **Stack execution** — the hash lock spends by matching `OP_SHA256` of the preimage against the committed hash.
 
-1. **Single Leaf Script Tree**: TapLeaf hash directly serves as Merkle root, no additional Merkle calculation needed
-2. **Control Block Verification**: Cryptographically prove script legitimacy through address restoration
-3. **Stack Execution**: Hash Lock implements conditional spending through hash matching verification
+**Things that bite if you get them wrong:**
 
-### Development Best Practices
+- **Tagged hash** — the tag is what separates a TapLeaf hash from a TapTweak; same machine, different label.
+- **Witness order** — `[input, script, control block]`, every time.
+- **Commit/reveal consistency** — build the script with the same function in both phases so the bytes match exactly.
 
-1. **Tagged Hash Understanding**: Master hash tags for different purposes, ensure security
-2. **Witness Data Order**: Strictly follow [input parameters, script, control block] order
-3. **Systematic Debugging**: Use our debug flowchart to troubleshoot common issues
-4. **Code Consistency**: Use helper functions to ensure commit-reveal phase alignment
-
-### The Bigger Picture
-
-This chapter establishes more than just Hash Lock implementation—it demonstrates Taproot's fundamental privacy revolution. By allowing complex contracts to masquerade as simple payments until execution, Taproot transforms Bitcoin's capability without sacrificing user privacy.
-
-**Next Steps**: In the following chapter, we'll explore **dual-leaf script trees**, learning how to organize multiple different spending conditions in one Taproot address, introducing real Merkle tree calculations, and experiencing the complete power of Taproot's script tree architecture for more complex application scenarios.
+**Next.** Chapter 7 moves from one leaf to two: a dual-leaf script tree, where the Merkle root is computed from more than one branch and you start choosing which branch to reveal. That's where the tree in "script tree" earns its name.
