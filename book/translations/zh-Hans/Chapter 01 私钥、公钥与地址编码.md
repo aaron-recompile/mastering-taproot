@@ -57,7 +57,7 @@ WIF 把原始 key 用 Base58Check 包了一层。这层包装加入了校验和�
 3. **算校验和**：取 `SHA256(SHA256(data))`，保留前 4 字节。
 4. **Base58 编码**，得到人类可读的字符串。
 
-![WIF encoding flow](./resources/wif-encoding-flow.png)
+![WIF encoding flow](../../manuscript/resources/wif-encoding-flow.png)
 
 
 图 1-1：WIF 编码把 32 字节私钥变成一个 Base58Check 编码的字符串
@@ -80,7 +80,7 @@ y² = x³ + 7
 
 ```
 
-![Secp256k1 curve](./resources/Secp256k1.png)
+![Secp256k1 curve](../../manuscript/resources/Secp256k1.png)
 
 图 1-2：Bitcoin 使用的 secp256k1 椭圆曲线
 
@@ -157,7 +157,7 @@ Bitcoin 地址**不是**公钥。它是公钥的一个编码后的哈希，而�
 3. **加校验和**：用于错误检测的字节。
 4. **编码**：Base58Check 或 Bech32 / Bech32m。
 
-![Legacy bitcoin address flow](./resources/Bitcoin_address_legacy.png)
+![Legacy bitcoin address flow](../../manuscript/resources/Bitcoin_address_legacy.png)
 
 图 1-3：以 Legacy 方式，通过哈希与编码把公钥转换成 Bitcoin 地址
 
@@ -248,7 +248,7 @@ Taproot 地址使用 Bech32m——对 Bech32 做了微调，修掉了原校验�
 
 一张图就能把整条链串起来——从生成 key，一直到真正落到链上的脚本。钱包用户永远只看到地址；作为开发者，你需要看清整条路径，因为节点强制执行的正是这条路径。
 
-![Key-pubkey-address relationships](./resources/TheDerivationModel.png)
+![Key-pubkey-address relationships](../../manuscript/resources/TheDerivationModel.png)
 
 图 1-4：私钥、公钥、地址与 WIF 格式之间的派生关系
 
