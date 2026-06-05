@@ -20,7 +20,6 @@ Legacy Transaction Structure:
            ↓
     TXID = SHA256(SHA256(entire_transaction))
 
-
 SegWit Transaction Structure:
 ┌─────────────────────────────────────────┐
 │ Version │ Inputs │ Outputs │ Locktime   │  } Base Transaction
@@ -73,6 +72,7 @@ If TXID_A changes due to malleability:
 这个改动直接体现在你怎么签名上。在 legacy P2PKH 里，签名进 scriptSig：
 
 **Legacy P2PKH Signing:**
+
 ```python
 # Legacy transaction signing
 sk = PrivateKey(private_key_wif)
@@ -97,6 +97,7 @@ tx_in.script_sig = unlocking_script  # Signature goes in scriptSig
 在 SegWit P2WPKH 里，scriptSig 留空，签名进见证。两个细节要紧：你调 `sign_segwit_input`（不是 `sign_input`），而且 SegWit 签名需要输入金额：
 
 **SegWit P2WPKH Signing:**
+
 ```python
 # SegWit transaction signing
 # CRITICAL: Must use sign_segwit_input, not sign_input
@@ -145,6 +146,7 @@ print(f"To:   {to_address.to_string()}")
 ```
 
 **Output:**
+
 ```
 From: tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
 To:   tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
@@ -174,6 +176,7 @@ print(f"Unsigned TX: {tx.serialize()}")
 ```
 
 **Unsigned Transaction Output:**
+
 ```text
 0200000000010148bcdd9dfa3749b74a1390d7bd272197e2588011abfb3303717d41
 6f8e4354140000000000fdffffff019a02000000000000160014c5b28d6bba91a269
@@ -181,6 +184,7 @@ print(f"Unsigned TX: {tx.serialize()}")
 ```
 
 **Parsed Components:**
+
 ```
 Version:      02000000
 Marker:       00 (SegWit indicator)
@@ -233,6 +237,7 @@ print(f"Signed TX: {signed_tx}")
 ```
 
 **Phase 2 Output:**
+
 ```
 ScriptSig: ''
 Witness Items: 2
@@ -252,6 +257,7 @@ scriptSig 仍然是空的；一切授权这笔花费的东西，现在都在末�
 ### 交易结构：签名前后
 
 **签名前（阶段 1）：**
+
 ```
 Standard Bitcoin Transaction Format (with SegWit marker/flag)
 ├── Version: 02000000
@@ -267,6 +273,7 @@ Total: 84 bytes (base transaction)
 ```
 
 **签名后（阶段 2）：**
+
 ```
 SegWit Transaction Format
 ├── Version: 02000000
@@ -316,6 +323,7 @@ Total: 191 bytes (added witness section: 82 bytes)
 ### 几个部件
 
 **锁定脚本（ScriptPubKey）：**
+
 ```
 0014c5b28d6bba91a2693a9b1876bcd3929323890fb2
 ```
@@ -340,12 +348,14 @@ Total: 191 bytes (added witness section: 82 bytes)
 ### 栈执行追踪
 
 **初始状态：**
+
 ```
 │ (empty)                                 │
 └─────────────────────────────────────────┘
 ```
 
 **加载见证项：**
+
 ```
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
@@ -353,6 +363,7 @@ Total: 191 bytes (added witness section: 82 bytes)
 ```
 
 **OP_0 —— 压入见证版本：**
+
 ```
 │ 00 (witness_version)                    │
 │ 02898711e6bf...c8519 (public_key)       │
@@ -361,6 +372,7 @@ Total: 191 bytes (added witness section: 82 bytes)
 ```
 
 **从脚本压入公钥哈希：**
+
 ```
 │ c5b28d6bba91...890fb2 (expected_hash)   │
 │ 00 (witness_version)                    │
@@ -372,6 +384,7 @@ Total: 191 bytes (added witness section: 82 bytes)
 到这里，解释器切进上面说的那套 P2PKH 等价执行，从见证里取出签名和公钥，跑 `OP_DUP OP_HASH160 <hash> OP_EQUALVERIFY OP_CHECKSIG`：
 
 **OP_DUP —— 复制公钥：**
+
 ```
 │ 02898711e6bf...c8519 (public_key)       │
 │ 02898711e6bf...c8519 (public_key)       │
@@ -380,15 +393,18 @@ Total: 191 bytes (added witness section: 82 bytes)
 ```
 
 **OP_HASH160 —— 哈希公钥：**
+
 ```
 │ c5b28d6bba91...890fb2 (computed_hash)   │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
+
 Hash160 = RIPEMD160(SHA256(public_key))。在 BIP143 下，P2WPKH 被签的 scriptCode 恰好就是这个 P2PKH 模板——`OP_DUP OP_HASH160 <20 字节哈希> OP_EQUALVERIFY OP_CHECKSIG`——这就是为什么 §4.1 里 `script_code` 取自 `public_key.get_address().to_script_pub_key()`（legacy 形式 `76a914c5b2...890fb288ac`），而不是 SegWit 地址。
 
 **从见证程序压入期望哈希：**
+
 ```
 │ c5b28d6bba91...890fb2 (expected_hash)   │
 │ c5b28d6bba91...890fb2 (computed_hash)   │
@@ -398,19 +414,23 @@ Hash160 = RIPEMD160(SHA256(public_key))。在 BIP143 下，P2WPKH 被签的 scri
 ```
 
 **OP_EQUALVERIFY —— 两个哈希必须相等：**
+
 ```
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
-computed_hash == expected_hash ✓
+
+computed_hash == expected_hash [OK]
 
 **OP_CHECKSIG —— 验证签名：**
+
 ```
 │ 1 (TRUE)                                │
 └─────────────────────────────────────────┘
 ```
-对着交易做 ECDSA 验签 ✓
+
+对着交易做 ECDSA 验签 [OK]
 
 ### 结果
 
@@ -423,32 +443,40 @@ SegWit 给一笔交易两个标识符：**txid**（base 交易的哈希，不含
 SegWit 立下的三样东西，是 Taproot 直接接着用的。
 
 **见证版本框架。** SegWit 按版本和程序长度定义输出，给后来的版本留了位子：
+
 ```
 Version 0: P2WPKH (OP_0 <20-bytes>) and P2WSH (OP_0 <32-bytes>)
 Version 1: P2TR (OP_1 <32-bytes>) - Taproot
 ```
+
 Taproot 就是见证版本 1 加一个 32 字节程序——本章追踪的这个框架里的下一个槽位。
 
 **抗可锻性。** 稳定的 TXID 才让预签名交易链可以安全地搭建——闪电通道和其他二层协议都依赖它。
 
 **基于权重的费用。** SegWit 给见证字节的计费低于 base 字节：
+
 ```
 Transaction Weight = (Base Size * 4) + Witness Size
 Virtual Size = Weight ÷ 4
 ```
+
 base 字节每个算 4 个权重单位；见证字节每个算 1 个。所以把授权数据移进见证会降低它的权重。你实际省多少，取决于交易里有多少是授权数据——这取决于结构，不是一个固定百分比。
 
 对一个 2-of-3 多签来说差别很大，因为授权本身就大。在 legacy 形式里它待在 scriptSig 里，按满权重计：
+
 ```
 scriptSig: OP_0 <sig1> <sig2> <redeemScript>
 Total: ~300 bytes in scriptSig (counted at full weight)
 ```
+
 在 SegWit P2WSH 里，同样的数据移到见证，每个字节只算四分之一：
+
 ```
 scriptSig: <empty> (0 bytes)
 witness: OP_0 <sig1> <sig2> <witnessScript>
 Total: ~300 bytes in witness (charged at 1 wu/byte)
 ```
+
 一笔交易里授权数据占比越大，见证折扣帮得越多——这就是为什么复杂脚本受益最大。Taproot 把这一点又推进了一步：靠密钥聚合，一笔多方花费可以只在链上放一个 64 字节签名，付的费接近单签交易。那是第 5 章起的事。
 
 ## 4.6 本章小结

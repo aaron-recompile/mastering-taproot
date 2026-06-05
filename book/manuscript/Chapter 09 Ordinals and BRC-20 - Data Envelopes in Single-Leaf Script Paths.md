@@ -55,8 +55,8 @@ The following two testnet transactions are the basis for this section's analysis
 | Field | Value |
 |---|---|
 | Input | 2,400 sats, key-path address |
-| Output 0 | 1,046 sats → `tb1pe7dahu72...seqqfsp` (temporary address) |
-| Output 1 | 1,054 sats → change |
+| Output 0 | 1,046 sats -> `tb1pe7dahu72...seqqfsp` (temporary address) |
+| Output 1 | 1,054 sats -> change |
 | Fee | 300 sats |
 | Witness | Single Schnorr signature (key path) |
 
@@ -67,7 +67,7 @@ The inscription content is indirectly committed into the output public key via t
 | Field | Value |
 |---|---|
 | Input | 1,046 sats, from temporary address |
-| Output | 546 sats → destination address |
+| Output | 546 sats -> destination address |
 | Fee | 500 sats |
 | Witness | Signature, inscription script, control block |
 

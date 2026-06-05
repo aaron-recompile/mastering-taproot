@@ -577,8 +577,8 @@ With three ways to spend one address, here's what each costs and reveals.
 **Verification, privacy, fee:**
 
 - **Key path** — one signature check; reveals nothing; cheapest (baseline).
-- **Hash script** — hash check plus Merkle verification; reveals the hash lock; ~1.6× the key-path fee.
-- **Bob script** — signature check plus Merkle verification; reveals the P2PK structure; ~1.7×.
+- **Hash script** — hash check plus Merkle verification; reveals the hash lock; ~1.6x the key-path fee.
+- **Bob script** — signature check plus Merkle verification; reveals the P2PK structure; ~1.7x.
 
 Three things fall out of these numbers:
 

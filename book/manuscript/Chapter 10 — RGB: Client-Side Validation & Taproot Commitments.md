@@ -122,17 +122,17 @@ The seal `tapret1st:64a14551...c20b6b:1` points to vout:1 visible on mempool —
 Genesis seal (closed):
 
 ```
-22d13f86...5d2a:0  →  1,000,000 units  →  spent
+22d13f86...5d2a:0  ->  1,000,000 units  ->  spent
 ```
 
 This transfer opens two new seals, both anchored to the same transaction:
 
 ```
 Transfer transaction: 64a14551...c20b6b
-  vout:0  →  tapret1st:...:0  →  999,900 (Alice's change)
-  vout:1  →  tapret1st:...:1  →  100     (Bob's receipt)
+  vout:0  ->  tapret1st:...:0  ->  999,900 (Alice's change)
+  vout:1  ->  tapret1st:...:1  ->  100     (Bob's receipt)
 
-Conservation check: 999,900 + 100 = 1,000,000 ✓
+Conservation check: 999,900 + 100 = 1,000,000 [OK]
 ```
 
 The old seal closes; the new transaction opens two new seals, each corresponding to a P2TR output whose script tree hides a Tapret commitment.
@@ -191,15 +191,15 @@ Owned:
 ```
 On-chain (visible to anyone):
   tx 64a14551...c20b6b
-  ├── vout:0  →  P2TR address tb1pd057...  (600 sats)
-  └── vout:1  →  P2TR address tb1p9yja...  (2,000 sats)
+  ├── vout:0  ->  P2TR address tb1pd057...  (600 sats)
+  └── vout:1  ->  P2TR address tb1p9yja...  (2,000 sats)
   No OP_RETURN output. No RGB marker of any kind.
 
 RGB client (requires consignment to parse):
   vout:0 script tree, depth 1: Tapret leaf
-    → MPC commitment → Alice's change, 999,900 units
+    -> MPC commitment -> Alice's change, 999,900 units
   vout:1 script tree, depth 1: Tapret leaf
-    → MPC commitment → Bob's receipt, 100 units
+    -> MPC commitment -> Bob's receipt, 100 units
 ```
 
 Bitcoin consensus validates the signature and transaction format. The Tapret leaf sits inside the script tree, is never executed, and has no effect on consensus. An external observer cannot distinguish this transaction from an ordinary Taproot transfer.
@@ -221,7 +221,7 @@ Inserting a Tapret leaf into the script tree changes the Merkle root, which feed
 
 ```
 t = HashTapTweak(internal_key || merkle_root)
-Q = internal_key + t × G
+Q = internal_key + t * G
 ```
 
 The output key `Q` is the on-chain Taproot address. The tweak `t` now encodes an RGB state commitment rather than a spending condition, but `Q` is indistinguishable from any other Taproot key. There is no way to tell whether a tweak came from a spendable script tree or an unspendable Tapret leaf.

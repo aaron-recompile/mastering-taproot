@@ -82,9 +82,11 @@ Schnorr Aggregated (3-of-3):
 Taproot leverages Schnorr's linearity through key tweaking (also called tweakable commitment in BIP340/341/342).
 
 Conceptually: 
+
 ```
 t = H("TapTweak" || internal_pubkey || merkle_root)
 ```
+
 Formally (BIP341):
 
 ```
@@ -93,6 +95,7 @@ t  = int(HashTapTweak(xonly_internal_key || merkle_root_or_empty)) mod n
 P' = P + t * G
 d' = d + t
 ```
+
 **Even-Y requirement (BIP340):**  
 Taproot uses x-only public keys — but the actual point on secp256k1 still has two possible y values (even / odd).  
 The BIP340 rule is: the final tweaked output key **must correspond to an even-y point**.  
@@ -285,6 +288,7 @@ tx, signature = create_simple_taproot_transaction()
 Let's examine a real Taproot transaction: [`a3b4d038...57a42cb6`](https://mempool.space/testnet/tx/a3b4d0382efd189619d4f5bd598b6421e709649b87532d53aecdc76457a42cb6?showDetails=true)
 
 **Transaction Structure:**
+
 ```
 Input:
 ├── Previous Output: tb1pjyje...y3ku8
@@ -297,6 +301,7 @@ Output:
 ```
 
 **Witness Data Analysis:**
+
 ```
 Schnorr Signature: 7d25fbc9...41da99f3
 
@@ -353,6 +358,7 @@ The witness stack contains only the signature:
 The interpreter runs BIP340 verification: parse `(r, s)`, compute the challenge `e = tagged_hash("BIP0340/challenge", r ‖ P ‖ m)`, compute `R = s·G − e·P`, and accept if `r` equals the x-coordinate of `R`.
 
 **Verification Result:**
+
 ```
 │ 1 (TRUE)                                │
 └─────────────────────────────────────────┘
@@ -360,7 +366,7 @@ The interpreter runs BIP340 verification: parse `(r, s)`, compute the challenge 
 
 Verified — key-path spend.
 
-## Output Shape: Legacy → SegWit → Taproot
+## Output Shape: Legacy -> SegWit -> Taproot
 
 ```
 Legacy P2PKH:
@@ -390,7 +396,7 @@ Taproot P2TR (Complex Contract):
 
 The simple-Taproot row and the complex-Taproot row are byte-for-byte identical at the output level.
 
-## SegWit → Taproot: Code Differences
+## SegWit -> Taproot: Code Differences
 
 ```python
 # SegWit (P2WPKH) Pattern
@@ -421,7 +427,7 @@ Two API changes are load-bearing: signing uses `sign_taproot_input()` (Schnorr, 
 
 ## Cooperative vs Script Path: Cost Asymmetry
 
-Cooperative key-path spends produce a 64-byte witness regardless of how many parties are behind the output key. Script-path spends require revealing the leaf script and a control block (33 bytes for the internal pubkey + leaf depth × 32 bytes for the Merkle proof), so witness size scales with tree depth and revealed script length. The fee difference makes cooperation the cheaper path whenever it is available.
+Cooperative key-path spends produce a 64-byte witness regardless of how many parties are behind the output key. Script-path spends require revealing the leaf script and a control block (33 bytes for the internal pubkey + leaf depth * 32 bytes for the Merkle proof), so witness size scales with tree depth and revealed script length. The fee difference makes cooperation the cheaper path whenever it is available.
 
 ## Chapter Summary
 

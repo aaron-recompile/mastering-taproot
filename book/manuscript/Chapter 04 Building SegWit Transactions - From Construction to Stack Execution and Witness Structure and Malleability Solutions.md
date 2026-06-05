@@ -20,7 +20,6 @@ Legacy Transaction Structure:
            ↓
     TXID = SHA256(SHA256(entire_transaction))
 
-
 SegWit Transaction Structure:
 ┌─────────────────────────────────────────┐
 │ Version │ Inputs │ Outputs │ Locktime   │  } Base Transaction
@@ -73,6 +72,7 @@ Pre-signed transaction chains like this assume the funding TXID is fixed. Mallea
 The change shows up directly in how you sign. In legacy P2PKH, the signature goes into the scriptSig:
 
 **Legacy P2PKH Signing:**
+
 ```python
 # Legacy transaction signing
 sk = PrivateKey(private_key_wif)
@@ -97,6 +97,7 @@ tx_in.script_sig = unlocking_script  # Signature goes in scriptSig
 In SegWit P2WPKH, the scriptSig stays empty and the signature goes into the witness. Two details matter: you call `sign_segwit_input` (not `sign_input`), and SegWit signing needs the input amount:
 
 **SegWit P2WPKH Signing:**
+
 ```python
 # SegWit transaction signing
 # CRITICAL: Must use sign_segwit_input, not sign_input
@@ -145,6 +146,7 @@ print(f"To:   {to_address.to_string()}")
 ```
 
 **Output:**
+
 ```
 From: tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
 To:   tb1qckeg66a6jx3xjw5mrpmte5ujjv3cjrajtvm9r4
@@ -174,6 +176,7 @@ print(f"Unsigned TX: {tx.serialize()}")
 ```
 
 **Unsigned Transaction Output:**
+
 ```text
 0200000000010148bcdd9dfa3749b74a1390d7bd272197e2588011abfb3303717d41
 6f8e4354140000000000fdffffff019a02000000000000160014c5b28d6bba91a269
@@ -181,6 +184,7 @@ print(f"Unsigned TX: {tx.serialize()}")
 ```
 
 **Parsed Components:**
+
 ```
 Version:      02000000
 Marker:       00 (SegWit indicator)
@@ -233,6 +237,7 @@ print(f"Signed TX: {signed_tx}")
 ```
 
 **Phase 2 Output:**
+
 ```
 ScriptSig: ''
 Witness Items: 2
@@ -252,6 +257,7 @@ The scriptSig is still empty; everything authorizing the spend now lives in the 
 ### Transaction Structure: Before and After
 
 **Before signing (Phase 1):**
+
 ```
 Standard Bitcoin Transaction Format (with SegWit marker/flag)
 ├── Version: 02000000
@@ -267,6 +273,7 @@ Total: 84 bytes (base transaction)
 ```
 
 **After signing (Phase 2):**
+
 ```
 SegWit Transaction Format
 ├── Version: 02000000
@@ -316,6 +323,7 @@ Now trace the spend through the script interpreter, using the real transaction's
 ### The Pieces
 
 **Locking script (ScriptPubKey):**
+
 ```
 0014c5b28d6bba91a2693a9b1876bcd3929323890fb2
 ```
@@ -340,12 +348,14 @@ This recognition is what keeps SegWit backward-compatible. A legacy node sees `O
 ### Stack Execution Trace
 
 **Initial state:**
+
 ```
 │ (empty)                                 │
 └─────────────────────────────────────────┘
 ```
 
 **Load the witness items:**
+
 ```
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
@@ -353,6 +363,7 @@ This recognition is what keeps SegWit backward-compatible. A legacy node sees `O
 ```
 
 **OP_0 — push witness version:**
+
 ```
 │ 00 (witness_version)                    │
 │ 02898711e6bf...c8519 (public_key)       │
@@ -361,6 +372,7 @@ This recognition is what keeps SegWit backward-compatible. A legacy node sees `O
 ```
 
 **Push the pubkey hash from the script:**
+
 ```
 │ c5b28d6bba91...890fb2 (expected_hash)   │
 │ 00 (witness_version)                    │
@@ -372,6 +384,7 @@ This recognition is what keeps SegWit backward-compatible. A legacy node sees `O
 At this point the interpreter switches into the P2PKH-equivalent execution described above, loading the signature and public key from the witness and running `OP_DUP OP_HASH160 <hash> OP_EQUALVERIFY OP_CHECKSIG`:
 
 **OP_DUP — duplicate the public key:**
+
 ```
 │ 02898711e6bf...c8519 (public_key)       │
 │ 02898711e6bf...c8519 (public_key)       │
@@ -380,15 +393,18 @@ At this point the interpreter switches into the P2PKH-equivalent execution descr
 ```
 
 **OP_HASH160 — hash the public key:**
+
 ```
 │ c5b28d6bba91...890fb2 (computed_hash)   │
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
+
 Hash160 = RIPEMD160(SHA256(public_key)). Under BIP143, the scriptCode signed for P2WPKH is exactly this P2PKH template — `OP_DUP OP_HASH160 <20-byte-hash> OP_EQUALVERIFY OP_CHECKSIG` — which is why §4.1 derived `script_code` from `public_key.get_address().to_script_pub_key()` (legacy form `76a914c5b2...890fb288ac`), not from the SegWit address.
 
 **Push the expected hash from the witness program:**
+
 ```
 │ c5b28d6bba91...890fb2 (expected_hash)   │
 │ c5b28d6bba91...890fb2 (computed_hash)   │
@@ -398,19 +414,23 @@ Hash160 = RIPEMD160(SHA256(public_key)). Under BIP143, the scriptCode signed for
 ```
 
 **OP_EQUALVERIFY — the two hashes must match:**
+
 ```
 │ 02898711e6bf...c8519 (public_key)       │
 │ 304402201509...33c0301 (signature)      │
 └─────────────────────────────────────────┘
 ```
-computed_hash == expected_hash ✓
+
+computed_hash == expected_hash [OK]
 
 **OP_CHECKSIG — verify the signature:**
+
 ```
 │ 1 (TRUE)                                │
 └─────────────────────────────────────────┘
 ```
-ECDSA verification of the signature against the transaction ✓
+
+ECDSA verification of the signature against the transaction [OK]
 
 ### Result
 
@@ -423,32 +443,40 @@ SegWit gives a transaction two identifiers: the **txid** (hash of the base trans
 Three things SegWit established are what Taproot builds on directly.
 
 **The witness-version framework.** SegWit defines outputs by version and program length, leaving room for later versions:
+
 ```
 Version 0: P2WPKH (OP_0 <20-bytes>) and P2WSH (OP_0 <32-bytes>)
 Version 1: P2TR (OP_1 <32-bytes>) - Taproot
 ```
+
 Taproot is just witness version 1 with a 32-byte program — the next slot in the framework this chapter traced.
 
 **Malleability resistance.** Stable TXIDs are what make pre-signed transaction chains safe to build — Lightning channels and other Layer 2 protocols depend on it.
 
 **Weight-based fees.** SegWit charges witness bytes less than base bytes:
+
 ```
 Transaction Weight = (Base Size * 4) + Witness Size
 Virtual Size = Weight ÷ 4
 ```
+
 Base bytes cost 4 weight units each; witness bytes cost 1. So moving authorization data into the witness lowers its weight. How much you actually save depends on how much of the transaction is authorization data — it's structure-dependent, not a fixed percentage.
 
 For a 2-of-3 multisig the difference is large, because the authorization is large. In legacy form it sits in the scriptSig, counted at full weight:
+
 ```
 scriptSig: OP_0 <sig1> <sig2> <redeemScript>
 Total: ~300 bytes in scriptSig (counted at full weight)
 ```
+
 In SegWit P2WSH the same data moves to the witness, where each byte costs a quarter:
+
 ```
 scriptSig: <empty> (0 bytes)
 witness: OP_0 <sig1> <sig2> <witnessScript>
 Total: ~300 bytes in witness (charged at 1 wu/byte)
 ```
+
 The more of a transaction that is authorization data, the more the witness discount helps — which is why complex scripts benefit most. Taproot pushes this further still: with key aggregation, a multi-party spend can put a single 64-byte signature on chain, paying close to what a single-signer transaction pays. That's Chapter 5 onward.
 
 ## 4.6 Chapter Summary

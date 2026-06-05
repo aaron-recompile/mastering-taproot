@@ -43,7 +43,7 @@ What makes the pattern pay off: at commit time, contracts of wildly different co
 
 ## Single-Leaf Hash Lock: From Commit to Reveal
 
-We'll build the smallest possible tree — one leaf — so nothing distracts from the commit→reveal flow:
+We'll build the smallest possible tree — one leaf — so nothing distracts from the commit->reveal flow:
 
 - **Hash-lock script**: checks the SHA256 of the secret word "helloworld".
 - **Single-leaf tree**: the simplest script tree there is, one leaf.
@@ -305,7 +305,7 @@ Bitcoin Core reads the script-path witness from the bottom up, and the positions
 - second-to-last: the script
 - everything before that: the inputs the script consumes, in order
 
-For our one-input hash lock that's just `[preimage, script, control_block]`. A handy way to remember it: **data → code → proof.**
+For our one-input hash lock that's just `[preimage, script, control_block]`. A handy way to remember it: **data -> code -> proof.**
 
 **3. The preimage is hex-encoded bytes.**
 

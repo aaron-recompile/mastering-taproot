@@ -256,7 +256,7 @@ Bob partial sig:   c12b9e4f... (first 16 bytes shown)
 final_sig = mu.partial_sig_agg([psig_alice, psig_bob], session_ctx)
 
 assert mu.schnorr_verify(msg, xonly_output, final_sig)
-# → Verification: PASSED
+# -> Verification: PASSED
 ```
 
 Output:
@@ -316,6 +316,6 @@ Witness savings           —                  70%
 
 Lightning Network Taproot channels replace P2WSH 2-of-2 multisig with MuSig2 key aggregation and a BIP86 key-only funding output. The cooperative close — the dominant channel closing method — produces a single 64-byte Schnorr signature, indistinguishable from any ordinary Taproot payment. P2WSH exposes the complete multisig script and two separate signatures; Taproot reveals nothing.
 
-MuSig2 (BIP 327) enables two parties to jointly control a single public key without either seeing the other's private key. The four-round signing protocol (NonceGen → NonceAgg → PartialSign → SigAgg) produces a standard 64-byte Schnorr signature on-chain. The BIP86 tweak lets both channel parties confirm that the funding output is key-path-only, rather than one that quietly commits to a hidden script path.
+MuSig2 (BIP 327) enables two parties to jointly control a single public key without either seeing the other's private key. The four-round signing protocol (NonceGen -> NonceAgg -> PartialSign -> SigAgg) produces a standard 64-byte Schnorr signature on-chain. The BIP86 tweak lets both channel parties confirm that the funding output is key-path-only, rather than one that quietly commits to a hidden script path.
 
 P2WSH made the channel structure legible to any observer. Taproot makes it invisible. The funding output, the cooperative close, the witness — none of it distinguishes a Lightning channel from an ordinary single-key payment.

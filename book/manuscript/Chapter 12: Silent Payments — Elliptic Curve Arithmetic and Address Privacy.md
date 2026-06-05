@@ -43,8 +43,8 @@ Alice's ECDH with Bob:
 Alice input pubkey (A, visible on-chain, read by Bob when scanning):
   0250be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3
 
-Alice computes with private key a:     a · B_scan  → ECDH shared secret
-Bob   computes with private key b_scan: b_scan · A  → same shared secret
+Alice computes with private key a:     a · B_scan  -> ECDH shared secret
+Bob   computes with private key b_scan: b_scan · A  -> same shared secret
 
 ECDH shared secret: 039e285df17d85590910f9e115422f29cfd32be28271845cd1abba62e542a1abc9
 Tweak t:            026a61d9053ee35bd74560c408fa3aeeee397291bad7cef0b2ce50f24ef55630
@@ -75,7 +75,7 @@ Bob extracts Alice's input pubkey from the transaction, computes `b_scan · A`, 
 
 ```
 p = b_spend + t
-p · G = (b_spend + t) · G = B_spend + t · G = P  ✓
+p · G = (b_spend + t) · G = B_spend + t · G = P  [OK]
 ```
 
 **Spend transaction**: [11774714...b8d91b](https://mempool.space/testnet/tx/11774714227d2c8c787372efff666dd0a27b044766e503a6241d28d2e1b8d91b)

@@ -577,8 +577,8 @@ def debug_control_block(control_block_hex, script_hex, expected_sibling):
 **验证、隐私、手续费：**
 
 - **Key path** —— 一次签名验证；什么都不暴露；最便宜（基线）。
-- **哈希脚本** —— 哈希检查加 Merkle 验证；暴露哈希锁；约 1.6× key-path 手续费。
-- **Bob 脚本** —— 签名检查加 Merkle 验证；暴露 P2PK 结构；约 1.7×。
+- **哈希脚本** —— 哈希检查加 Merkle 验证；暴露哈希锁；约 1.6x key-path 手续费。
+- **Bob 脚本** —— 签名检查加 Merkle 验证；暴露 P2PK 结构；约 1.7x。
 
 从这些数字能引出三点：
 

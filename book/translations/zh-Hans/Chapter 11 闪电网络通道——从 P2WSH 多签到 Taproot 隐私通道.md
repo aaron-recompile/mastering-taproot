@@ -271,7 +271,7 @@ Bob 部分签名：  c12b9e4f...（只显示前 16 字节）
 final_sig = mu.partial_sig_agg([psig_alice, psig_bob], session_ctx)
 
 assert mu.schnorr_verify(msg, xonly_output, final_sig)
-# → 验证：通过
+# -> 验证：通过
 
 ```
 
@@ -336,6 +336,6 @@ tx.witnesses.append(TxWitnessInput([final_sig.hex()]))
 
 闪电网络 Taproot 通道用 MuSig2 密钥聚合和 BIP86 纯密钥路径资金输出取代了 P2WSH 2-of-2 多签。合作关闭——最主要的通道关闭方式——产生一个 64 字节的 Schnorr 签名，与任何普通 Taproot 支付无法区分。P2WSH 暴露完整的多签脚本和两个独立的签名；Taproot 什么都不透露。
 
-MuSig2（BIP 327）让两个参与方在互不知晓对方私钥的情况下共同控制一个公钥。四轮签名协议（NonceGen → NonceAgg → PartialSign → SigAgg）在链上产生一个标准 64 字节 Schnorr 签名。BIP86 调整让通道双方都能确认：这个 funding output 是按 key-path-only 的方式构造出来的，而不是额外承诺了一棵隐藏脚本树。
+MuSig2（BIP 327）让两个参与方在互不知晓对方私钥的情况下共同控制一个公钥。四轮签名协议（NonceGen -> NonceAgg -> PartialSign -> SigAgg）在链上产生一个标准 64 字节 Schnorr 签名。BIP86 调整让通道双方都能确认：这个 funding output 是按 key-path-only 的方式构造出来的，而不是额外承诺了一棵隐藏脚本树。
 
 P2WSH 让通道结构对任何观察者一目了然。Taproot 让它隐形。资金输出、合作关闭、见证字段——没有任何一项能将闪电通道与普通单密钥支付区分开来。
