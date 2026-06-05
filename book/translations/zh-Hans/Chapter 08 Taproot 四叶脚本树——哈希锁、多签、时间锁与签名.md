@@ -1,28 +1,28 @@
-# Chapter 8: Four-Leaf Taproot Script Tree — Hashlock, Multisig, Timelock, and Signature
+# 第 8 章：Taproot 四叶脚本树——哈希锁、多签、时间锁与签名
 
-## From Two Leaves to Four
+## 从两片叶子到四片
 
-Chapter 7 built a two-leaf tree: one TapBranch over two leaves, and a control block carrying a single sibling hash. This chapter goes to four leaves, and that means a tree with two levels — leaves pair into branches, and the branches pair into the root. The control block grows to match: it now carries **two** sibling hashes (97 bytes), a Merkle path that climbs two levels instead of one.
+第 7 章构建了一棵双叶树：一个 TapBranch 覆盖两片叶子，control block 带一个兄弟哈希。本章走到四片叶子，这意味着一棵**两层**的树——叶子两两配成分支，分支再两两配成根。control block 也随之变大：它现在带**两个**兄弟哈希（97 字节），一条向上爬两层、而不是一层的 Merkle 路径。
 
-Four leaves is also enough room to put genuinely different conditions side by side. The address we build has four script paths plus the key path — five ways to spend, one address:
+四片叶子也腾出了足够空间，把真正不同的条件并排放在一起。我们要构建的地址有四条脚本路径，加上 key path——五种花法，一个地址：
 
-1. **Hashlock** — anyone with the preimage "helloworld" can spend (the Chapter 6/7 hash lock).
-2. **2-of-2 multisig** — Alice and Bob together, written with Tapscript's `OP_CHECKSIGADD`.
-3. **CSV timelock** — Bob can spend, but only after 2 blocks have passed.
-4. **Simple signature** — Bob can spend immediately.
-5. **Key path** — Alice spends directly with her tweaked key; looks like an ordinary payment.
+1. **哈希锁**——任何拿到原像 "helloworld" 的人都能花（第 6/7 章那把哈希锁）。
+2. **2-of-2 多签**——Alice 和 Bob 一起，用 Tapscript 的 `OP_CHECKSIGADD` 写。
+3. **CSV 时间锁**——Bob 能花，但要等 2 个区块之后。
+4. **简单签名**——Bob 立刻就能花。
+5. **Key path**——Alice 用她 tweak 后的密钥直接花；看起来就是一笔普通支付。
 
-These map onto real patterns — a recovery path plus a timelock plus a cooperative close is the skeleton of a wallet-recovery scheme or a Lightning channel — but the point here is mechanical: how four leaves are committed, and how each path is revealed and verified.
+这些都对应着真实模式——一条恢复路径加一个时间锁加一条合作关闭，就是钱包恢复方案或闪电通道的骨架——但这里的重点是机制：四片叶子怎么承诺，每条路径怎么揭示和验证。
 
-## The Tree, and One Shared Address
+## 这棵树，以及一个共享地址
 
-Every spend below comes out of the same address:
+下面每一笔花费都出自同一个地址：
 
 ```
 Address: tb1pjfdm...jcr29q
 ```
 
-Its tree is balanced — two leaves under each of two branches:
+它的树是平衡的——两个分支下各两片叶子：
 
 ```
                  Merkle Root
@@ -33,19 +33,19 @@ Its tree is balanced — two leaves under each of two branches:
   (Hashlock) (Multisig)  (CSV)    (Sig)
 ```
 
-Each leaf's witness is the same shape we've used since Chapter 6 — data, then script, then control block — with the data part differing by what the script checks:
+每片叶子的 witness 还是第 6 章以来那个形状——数据、脚本、control block——只是数据部分因脚本检查的东西不同而不同：
 
-| Leaf | Unlocks with | Witness `[0..]` |
-|------|--------------|-----------------|
-| Script 0 Hashlock | the preimage | `[preimage]` |
-| Script 1 Multisig | both signatures | `[bob_sig, alice_sig]` |
-| Script 2 CSV | a signature, after 2 blocks | `[bob_sig]` + tx sequence set |
-| Script 3 Simple sig | a signature | `[bob_sig]` |
-| Key path | Alice's tweaked key | `[alice_sig]` |
+| 叶子 | 用什么解锁 | Witness `[0..]` |
+|------|-----------|-----------------|
+| Script 0 哈希锁 | 原像 | `[preimage]` |
+| Script 1 多签 | 两个签名 | `[bob_sig, alice_sig]` |
+| Script 2 CSV | 一个签名，且过了 2 块 | `[bob_sig]` + 交易 sequence 设好 |
+| Script 3 简单签名 | 一个签名 | `[bob_sig]` |
+| Key path | Alice 的 tweak 密钥 | `[alice_sig]` |
 
-## Building the Tree
+## 构建这棵树
 
-The setup — keys, then four scripts, then the tree:
+准备工作——密钥，然后四段脚本，然后树：
 
 ```python
 from bitcoinutils.setup import setup
@@ -66,7 +66,7 @@ alice_pub = alice_priv.get_public_key()
 bob_pub = bob_priv.get_public_key()
 ```
 
-The four scripts. Two are familiar from earlier chapters; two are new:
+四段脚本。两段是前面章节的老面孔，两段是新的：
 
 ```python
 # Script 0: SHA256 Hashlock
@@ -109,7 +109,7 @@ script3 = Script([
 ])
 ```
 
-The tree is written as nested pairs — two leaves per branch — and that nesting is what gives a two-level Merkle structure:
+树写成嵌套的成对结构——每个分支两片叶子——正是这种嵌套给出了两层 Merkle 结构：
 
 ```python
 # Build script tree: [[left branch], [right branch]]
@@ -121,13 +121,13 @@ print(f"Taproot Address: {taproot_address.to_string()}")
 # Output: tb1pjfdm...jcr29q
 ```
 
-## Spending Each Path
+## 分别花费每条路径
 
-The five spends differ only in what they put in the witness and which leaf index the control block points at. We'll walk all five; the patterns repeat.
+五笔花费的差别只在于：往 witness 里放什么，以及 control block 指向哪个叶子索引。我们五条都走一遍；模式是重复的。
 
-### 1. Hashlock (Script 0)
+### 1. 哈希锁（Script 0）
 
-The Chapter 6/7 hash lock, now at index 0 of a four-leaf tree — so its control block carries a two-level proof, but the call looks identical:
+第 6/7 章那把哈希锁，现在位于四叶树的索引 0——所以它的 control block 带两层证明，但调用看起来一模一样：
 
 ```python
 def spend_hashlock_path():
@@ -161,9 +161,9 @@ def spend_hashlock_path():
 # Testnet transaction ID: 1ba4835f...a6fd6845
 ```
 
-### 2. Multisig (Script 1)
+### 2. 多签（Script 1）
 
-The multisig path is the new one worth dwelling on. Two signatures, both produced as script-path signatures over the same leaf:
+多签路径是值得多停留一下的新东西。两个签名，都作为针对同一片叶子的脚本路径签名产生：
 
 ```python
 def spend_multisig_path():
@@ -213,11 +213,11 @@ def spend_multisig_path():
 # Testnet transaction ID: 1951a3be...b7e604a1
 ```
 
-Both signers use `script_path=True`, `tapleaf_script=script1`, `tweak=False` — the same script-path signing from Chapter 7, just done twice over the one leaf. The witness order is the subtle part, and the stack walk below explains exactly why `sig_bob` goes first.
+两个签名方都用 `script_path=True`、`tapleaf_script=script1`、`tweak=False`——就是第 7 章那套脚本路径签名，只是对这一片叶子做了两遍。witness 顺序是微妙的地方，下面的栈走法会精确解释为什么 `sig_bob` 排在前面。
 
-### 3. CSV timelock (Script 2)
+### 3. CSV 时间锁（Script 2）
 
-The timelock path has one requirement the others don't: the *transaction* has to set a matching sequence, or `OP_CHECKSEQUENCEVERIFY` rejects it. The script says "2 blocks must have passed," and the input's sequence is what proves it:
+时间锁路径有一个别的路径没有的要求：*交易本身*必须设一个匹配的 sequence，否则 `OP_CHECKSEQUENCEVERIFY` 会拒绝它。脚本说"必须过了 2 个区块"，而输入的 sequence 就是证明这一点的东西：
 
 ```python
 def spend_csv_timelock_path():
@@ -263,11 +263,11 @@ def spend_csv_timelock_path():
 # Testnet transaction ID: 98361ab2...d17f41ee
 ```
 
-Note the symmetry: the script carries `seq.for_script()` (the timelock condition), and the input carries `seq.for_input_sequence()` (the claim that it's satisfied). Both come from the same `Sequence` object, and both have to be present — the script states the rule, the transaction supplies the evidence.
+注意这种对称：脚本带着 `seq.for_script()`（时间锁条件），输入带着 `seq.for_input_sequence()`（"它已满足"的声明）。两者来自同一个 `Sequence` 对象，且必须都在——脚本陈述规则，交易提供证据。
 
-### 4. Simple signature (Script 3)
+### 4. 简单签名（Script 3）
 
-The plainest leaf — Bob signs, no extra conditions. Same as Chapter 7's Bob script, now at index 3:
+最朴素的叶子——Bob 签名，没有额外条件。和第 7 章的 Bob 脚本一样，现在位于索引 3：
 
 ```python
 def spend_simple_sig_path():
@@ -310,7 +310,7 @@ def spend_simple_sig_path():
 
 ### 5. Key path
 
-And the one that reveals nothing — Alice's key-path spend, identical in spirit to Chapter 6's. It still needs the whole `tree` to rebuild the tweak, but nothing about the tree reaches the chain:
+以及什么都不暴露的那一条——Alice 的 key-path 花费，精神上和第 6 章一致。它仍然需要整棵 `tree` 来重建 tweak，但树的任何信息都不会上链：
 
 ```python
 def spend_key_path():
@@ -343,11 +343,11 @@ def spend_key_path():
 # Testnet transaction ID: 1e518aa5...e95600da
 ```
 
-Note the parameter difference one more time, since it's the single most common point of confusion: the key path passes `tapleaf_scripts=tree` (plural, the whole tree, to compute the tweak) with `script_path=False`; every script path passes `tapleaf_script=script_n` (singular, one leaf) with `script_path=True`.
+再强调一次这个参数差异，因为它是最常见的困惑点：key path 传 `tapleaf_scripts=tree`（复数，整棵树，用来算 tweak），配 `script_path=False`；每条脚本路径传 `tapleaf_script=script_n`（单数，一片叶子），配 `script_path=True`。
 
-## How OP_CHECKSIGADD Runs
+## OP_CHECKSIGADD 怎么跑
 
-The multisig leaf is the one new piece of script execution in this chapter, so let's walk its stack. Tapscript replaced the old `OP_CHECKMULTISIG` with `OP_CHECKSIGADD`, which keeps a running count of valid signatures:
+多签叶子是本章唯一新出现的脚本执行，我们走一遍它的栈。Tapscript 用 `OP_CHECKSIGADD` 取代了旧的 `OP_CHECKMULTISIG`，它维护一个有效签名的累加计数：
 
 ```python
 # Script 1: 2-of-2 multisig (tapscript style)
@@ -362,39 +362,39 @@ script1 = Script([
 ])
 ```
 
-The witness puts both signatures on the stack before the script runs, and the order matters:
+witness 在脚本运行前把两个签名都放上栈，而顺序很重要：
 
 ```python
 # Witness data: [Bob signature, Alice signature, script, control_block]
 # Note: Bob signature first, but consumed second!
 tx.witnesses.append(TxWitnessInput([
-    sig_bob,               # Stack position: lower, consumed second by OP_CHECKSIGADD
-    sig_alice,             # Stack position: top, consumed first by OP_CHECKSIGADD
+    sig_bob,               # 栈位置：靠下，被第二个 OP_CHECKSIGADD 消费
+    sig_alice,             # 栈位置：顶端，被第一个 OP_CHECKSIGADD 消费
     script1.to_hex(),
     cb.to_hex()
 ]))
 ```
 
-**Stack walk** — script `OP_0 [Alice_PubKey] OP_CHECKSIGADD [Bob_PubKey] OP_CHECKSIGADD OP_2 OP_EQUAL`.
+**栈走法** —— 脚本 `OP_0 [Alice_PubKey] OP_CHECKSIGADD [Bob_PubKey] OP_CHECKSIGADD OP_2 OP_EQUAL`。
 
-**Start** — both signatures loaded, `sig_alice` on top:
+**起点** —— 两个签名都已加载，`sig_alice` 在顶上：
 
 ```
-| sig_alice   | ← top, consumed first
+| sig_alice   | ← 顶，先被消费
 | sig_bob     |
 └─────────────┘
 ```
 
-**OP_0** — pushes the counter, initialized to 0:
+**OP_0** —— 压入计数器，初始化为 0：
 
 ```
-| 0           | ← counter
+| 0           | ← 计数器
 | sig_alice   |
 | sig_bob     |
 └─────────────┘
 ```
 
-**[Alice_PubKey]** — the script pushes Alice's key:
+**[Alice_PubKey]** —— 脚本压入 Alice 的密钥：
 
 ```
 | alice_pubkey|
@@ -404,55 +404,55 @@ tx.witnesses.append(TxWitnessInput([
 └─────────────┘
 ```
 
-**OP_CHECKSIGADD** — pops the key, pops the counter, pops the signature below it; verifies `sig_alice` against `alice_pubkey`; pushes counter+1:
+**OP_CHECKSIGADD** —— 弹出密钥、弹出计数器、弹出它下面的签名；用 `alice_pubkey` 验 `sig_alice`；压入 计数器+1：
 
 ```
-| 1           | ← counter is now 1
+| 1           | ← 计数器现在是 1
 | sig_bob     |
 └─────────────┘
 ```
 
-**[Bob_PubKey]** then **OP_CHECKSIGADD** — same again for Bob, consuming `sig_bob`:
+**[Bob_PubKey]** 接 **OP_CHECKSIGADD** —— 对 Bob 同样来一遍，消费 `sig_bob`：
 
 ```
-| 2           | ← counter is now 2
+| 2           | ← 计数器现在是 2
 └─────────────┘
 ```
 
-**OP_2** then **OP_EQUAL** — push the required count, compare; `2 == 2`, so push 1 and the script is satisfied:
+**OP_2** 接 **OP_EQUAL** —— 压入要求的数量，比较；`2 == 2`，于是压入 1，脚本被满足：
 
 ```
 | 1           |
 └─────────────┘
 ```
 
-That's why `sig_alice` has to be on top of `sig_bob` in the witness: the *first* `OP_CHECKSIGADD` is Alice's, and it consumes whichever signature is on top at that moment. The witness lists `[sig_bob, sig_alice]` — bob first, so alice ends up on top, so alice is checked first. Reverse them and both checks fail.
+这就是为什么 witness 里 `sig_alice` 必须在 `sig_bob` 上面：*第一个* `OP_CHECKSIGADD` 是 Alice 的，它消费当下栈顶的那个签名。witness 列的是 `[sig_bob, sig_alice]`——bob 在前，于是 alice 落到顶上，于是 alice 先被检查。反过来，两个检查都会失败。
 
 ```python
-# wrong order — both checks fail
+# 错序 —— 两个检查都失败
 witness = [sig_alice, sig_bob, script1.to_hex(), cb.to_hex()]
 
-# right order — bob first, alice ends up on top
+# 正序 —— bob 在前，alice 落到顶上
 witness = [sig_bob, sig_alice, script1.to_hex(), cb.to_hex()]
 ```
 
-**Why `OP_CHECKSIGADD` and not `OP_CHECKMULTISIG`?** Three concrete reasons:
-- It checks one signature at a time and stops on failure, instead of trying combinations.
-- The counter is explicit — no off-by-one `OP_CHECKMULTISIG` dummy-element quirk.
-- It takes 32-byte x-only keys directly, where `OP_CHECKMULTISIG` wanted 33-byte compressed keys.
+**为什么用 `OP_CHECKSIGADD` 而不是 `OP_CHECKMULTISIG`？** 三个具体原因：
+- 它一次检查一个签名、失败即停，而不是去试各种组合。
+- 计数器是显式的——没有 `OP_CHECKMULTISIG` 那个差一位的多余元素怪癖。
+- 它直接吃 32 字节的 x-only 密钥，而 `OP_CHECKMULTISIG` 要 33 字节压缩密钥。
 
-## The Four-Leaf Control Block
+## 四叶 control block
 
-With two levels in the tree, each leaf's Merkle proof is two hashes — its immediate sibling, then that pair's sibling branch — so the control block is 97 bytes:
+树有两层，每片叶子的 Merkle 证明就是两个哈希——它的直接兄弟，再加上那一对的兄弟分支——所以 control block 是 97 字节：
 
 ```
-33 bytes: version+parity (1) + internal pubkey (32)
-+32 bytes: sibling leaf hash    (level 1)
-+32 bytes: sibling branch hash  (level 2)
-= 97 bytes
+33 字节：版本+奇偶 (1) + 内部公钥 (32)
++32 字节：兄弟叶子哈希    （第 1 层）
++32 字节：兄弟分支哈希    （第 2 层）
+= 97 字节
 ```
 
-Which two hashes each leaf needs depends on where it sits:
+每片叶子需要哪两个哈希，取决于它的位置：
 
 ```python
 paths = {
@@ -463,9 +463,9 @@ paths = {
 }
 ```
 
-### Reading a real control block
+### 读一个真实的 control block
 
-Take the multisig spend, [`1951a3be...b7e604a1`](https://mempool.space/testnet/tx/1951a3be0f05df377b1789223f6da66ed39c781aaf39ace0bf98c3beb7e604a1?showDetails=true), and pull its witness off the chain:
+拿多签那笔 [`1951a3be...b7e604a1`](https://mempool.space/testnet/tx/1951a3be0f05df377b1789223f6da66ed39c781aaf39ace0bf98c3beb7e604a1?showDetails=true)，把它的 witness 从链上抠出来：
 
 ```python
 def analyze_real_multisig_transaction():
@@ -504,7 +504,7 @@ def analyze_real_multisig_transaction():
     return witness_stack
 ```
 
-Splitting the 97-byte control block into its four parts:
+把 97 字节的 control block 拆成四部分：
 
 ```python
 def parse_control_block_bytes():
@@ -551,9 +551,9 @@ def parse_control_block_bytes():
     }
 ```
 
-### Climbing the two levels back to the address
+### 爬两层回到地址
 
-With the script and its two sibling hashes in hand, verification is the same idea as Chapter 7 — recompute the root and check it rebuilds the address — but now it takes two TapBranch steps instead of one:
+有了脚本和它的两个兄弟哈希，验证还是第 7 章那个思路——重算根、看它能否重建地址——只是现在要走两步 TapBranch，而不是一步：
 
 ```python
 def reconstruct_merkle_root_step_by_step():
@@ -622,69 +622,69 @@ if __name__ == "__main__":
     reconstruct_merkle_root_step_by_step()
 ```
 
-Running it against the real bytes gives Script1 TapLeaf `63cb9e47...`, Branch0 `d6ac4c01...`, Merkle root `33fd4d4b...`, and a tweak that rebuilds `tb1pjfdm...jcr29q` — the same address all five spends came out of. Two things fall out of the parse worth noticing:
+对着真实字节跑一遍，得到 Script1 TapLeaf `63cb9e47...`、Branch0 `d6ac4c01...`、Merkle root `33fd4d4b...`，以及一个能重建出 `tb1pjfdm...jcr29q` 的 tweak——正是五笔花费共出的那个地址。从这次解析里有两点值得注意：
 
-- Sibling 1 is `fe78d852...f10f659e` — exactly Script 0's TapLeaf hash, and the very same value we computed for the hash lock back in Chapter 7. Same script, same leaf hash, across chapters.
-- The proof is hierarchical: level 0 is the multisig leaf itself, level 1 is `Branch0 = TapBranch(Script0, Script1)`, level 2 is `Root = TapBranch(Branch0, Branch1)`. Every TapBranch sorts its two inputs lexicographically, which is what makes the root reproducible by anyone.
+- 兄弟 1 是 `fe78d852...f10f659e`——恰好是 Script 0 的 TapLeaf 哈希，也正是我们在第 7 章为那把哈希锁算出的同一个值。同一段脚本，同一个叶子哈希，跨章一致。
+- 证明是分层的：第 0 层是多签叶子本身，第 1 层是 `Branch0 = TapBranch(Script0, Script1)`，第 2 层是 `Root = TapBranch(Branch0, Branch1)`。每一步 TapBranch 都把两个输入按字典序排，这正是任何人都能复算出根的原因。
 
-## Three Things That Bite
+## 三个会咬人的地方
 
-The four-leaf spends fail in a few predictable ways. In order of how often they catch people:
+四叶花费会以几种可预测的方式失败。按踩坑频率排序：
 
-**Witness order, for multisig.** Bob's signature goes first in the list so Alice's ends up on top of the stack — the reverse fails both checks (see the stack walk above):
+**多签的 witness 顺序。** Bob 的签名在列表里排第一，好让 Alice 的落到栈顶——反过来两个检查都失败（见上面的栈走法）：
 
 ```python
-# wrong
+# 错
 witness = [sig_alice, sig_bob, script, control_block]
-# right
+# 对
 witness = [sig_bob, sig_alice, script, control_block]
 ```
 
-**Sequence, for CSV.** A CSV script only passes if the input's sequence says enough blocks have elapsed. Forget it and `OP_CHECKSEQUENCEVERIFY` rejects the spend:
+**CSV 的 sequence。** CSV 脚本只有在输入的 sequence 表明已过足够区块时才通过。忘了它，`OP_CHECKSEQUENCEVERIFY` 就拒绝这笔花费：
 
 ```python
-# wrong — default sequence, CSV fails
+# 错 —— 默认 sequence，CSV 失败
 txin = TxInput(txid, vout)
-# right — sequence matches the script's timelock
+# 对 —— sequence 匹配脚本的时间锁
 txin = TxInput(txid, vout, sequence=seq.for_input_sequence())
 ```
 
-**Key path vs script path signing.** The two take different parameters; mixing them up is the most common single mistake:
+**key path 与 script path 的签名。** 两者参数不同，混用是最常见的单一错误：
 
 ```python
-# key path:    whole tree (to tweak the key), script_path=False
+# key path：    整棵树（用来 tweak 密钥），script_path=False
 sig = priv.sign_taproot_input(..., script_path=False, tapleaf_scripts=tree)
-# script path: one leaf, script_path=True
+# script path： 一片叶子，script_path=True
 sig = priv.sign_taproot_input(..., script_path=True, tapleaf_script=script)
 ```
 
-## Chapter Summary
+## 本章小结
 
-Four leaves turned the single TapBranch of Chapter 7 into a two-level tree, and the control block grew to match — 97 bytes carrying a two-hash Merkle path. We put four genuinely different conditions under one address (a hash lock, a 2-of-2 multisig, a CSV timelock, and a plain signature), spent each one on testnet, and verified the multisig's control block by climbing both branch levels back to the same funding address every path shares.
+四片叶子把第 7 章的单个 TapBranch 变成了一棵两层的树，control block 也随之变大——97 字节，带一条两个哈希的 Merkle 路径。我们把四个真正不同的条件放在了一个地址下（一把哈希锁、一个 2-of-2 多签、一个 CSV 时间锁、一个普通签名），在 testnet 上各花了一遍，并通过把多签的 control block 沿两层分支爬回每条路径共享的同一个地址，验证了它。
 
-Two ideas are the ones to keep:
+两个要记住的点：
 
-- **`OP_CHECKSIGADD`** is how Tapscript does multisig — a running counter of valid signatures, fed by a witness whose signature order has to match the order the script checks them.
-- **A taller tree means a longer Merkle path.** Each level of depth adds one 32-byte sibling to the control block; the cost grows with the log of the number of leaves, not the count.
+- **`OP_CHECKSIGADD`** 是 Tapscript 做多签的方式——一个有效签名的累加计数，喂给它的 witness 里签名顺序必须匹配脚本检查它们的顺序。
+- **树越高，Merkle 路径越长。** 每多一层深度，control block 就多一个 32 字节的兄弟；成本随叶子数量的对数增长，而不是随个数增长。
 
-### What Chapters 5–8 covered
+### 第 5–8 章讲了什么
 
-This chapter completes the foundational part of the book. Since Chapter 5, the four chapters have built up Taproot one mechanism at a time:
+本章把全书的基础部分讲完了。从第 5 章起，这四章一次一个机制，把 Taproot 搭了起来：
 
-- **Chapter 5** — Schnorr signatures and the key tweak: how one public key can commit to extra data.
-- **Chapter 6** — a single-leaf script path: commit one script, then spend it or use the key path.
-- **Chapter 7** — two leaves: a Merkle root over a TapBranch, and a control block that proves a leaf with its sibling.
-- **Chapter 8** — four leaves and a two-level tree, with multisig, a timelock, and a 97-byte proof.
+- **第 5 章** —— Schnorr 签名与 key tweak：一个公钥如何承诺额外的数据。
+- **第 6 章** —— 单叶脚本路径：承诺一段脚本，然后花掉它，或走 key path。
+- **第 7 章** —— 两片叶子：一个 TapBranch 之上的 Merkle 根，以及用兄弟哈希证明一片叶子的 control block。
+- **第 8 章** —— 四片叶子、两层树，带多签、时间锁和一条 97 字节的证明。
 
-These four build directly on each other: the key tweak from Chapter 5 is what commits the Merkle root, the commit–reveal pattern from Chapter 6 is how every script path works, and the Merkle proof grows by one sibling hash per level from Chapter 7 to Chapter 8. If those connections aren't clear yet, it's worth reading the four chapters together before moving on — the rest of the book assumes them.
+这四章是直接相互叠加的：第 5 章的 key tweak 正是用来承诺 Merkle 根的，第 6 章的 commit–reveal 是每条脚本路径的工作方式，而 Merkle 证明从第 7 章到第 8 章每多一层就多一个兄弟哈希。如果这些联系还不清楚，继续往下之前值得把这四章放在一起读一遍——后面的内容默认你已经掌握了它们。
 
-### Chapters 9–12: applications
+### 第 9–12 章：应用
 
-The second half of the book moves from how Taproot works to how it is used. Each chapter takes a real system and points out where these mechanisms appear:
+全书的后半段，从"Taproot 如何运作"转到"它怎么被使用"。每一章拿一个真实系统，指出这些机制在哪里出现：
 
-- **Chapter 9 — Ordinals and BRC-20.** Using a script path to store data instead of spending conditions: a single-leaf script that commits arbitrary content into a Taproot output.
-- **Chapter 10 — RGB and Tapret.** Client-side validation, with commitments placed inside the script tree.
-- **Chapter 11 — Lightning channels.** Moving channels from P2WSH multisig to Taproot, and the privacy this adds.
-- **Chapter 12 — Silent Payments.** The elliptic-curve arithmetic from Chapter 5 again, this time for address privacy: reusable addresses that leave no link on chain.
+- **第 9 章 —— Ordinals 与 BRC-20。** 用脚本路径来存数据，而不是花费条件：一段单叶脚本，把任意内容承诺进一个 Taproot 输出。
+- **第 10 章 —— RGB 与 Tapret。** 客户端验证，把承诺放进脚本树里。
+- **第 11 章 —— 闪电通道。** 把通道从 P2WSH 多签搬到 Taproot，以及这带来的隐私。
+- **第 12 章 —— 静默支付。** 又是第 5 章那套椭圆曲线运算，这次用于地址隐私：可复用地址，在链上不留下关联。
 
-**Next.** Chapter 9 starts with a single leaf, like Chapter 6, but uses it for something different: storing data in a Taproot output.
+**下一章。** 第 9 章和第 6 章一样从单叶起步，但用途不同：把数据存进一个 Taproot 输出。
