@@ -1,29 +1,25 @@
 # Chapter 1: Private Keys, Public Keys, and Address Encoding
 
-Understanding Bitcoin's cryptographic foundation is essential before diving into Taproot's advanced features. This chapter covers the fundamentals of private keys, public keys, and address generation—the building blocks that make Bitcoin transactions possible.
+Every Bitcoin spend traces back to one chain of derivations: a private key produces a public key, and a public key produces an address. This chapter walks that chain end to end — generate a key, encode it, and turn it into the four address formats you will meet through the rest of the book. None of it is Taproot-specific yet, but the two pieces introduced at the end — x-only public keys and Bech32m — are exactly what Taproot is built on.
 
-## The Cryptographic Hierarchy
+## 1.1 The Derivation Chain
 
-Bitcoin's security model relies on a one-way mathematical relationship between private keys, public keys, and addresses:
+Bitcoin's ownership model is a one-way chain. Each arrow is cheap to compute forwards and infeasible to run backwards:
 
 ```text
 Private Key (256-bit) -> Public Key (ECDSA point) -> Address (encoded hash)
 
 ```
 
-Each step in this hierarchy serves a specific purpose:
+The three pieces divide the work cleanly: the private key signs, the public key lets anyone verify that signature, and the address is the short string you hand out to receive funds — with the public key itself kept out of sight until the moment you spend.
 
-- **Private keys** provide cryptographic ownership and signing capability
-- **Public keys** enable signature verification and payment authorization
-- **Addresses** offer a user-friendly way to receive payments while preserving privacy
+## 1.2 Private Keys: The Foundation of Ownership
 
-## Private Keys: The Foundation of Ownership
-
-A Bitcoin private key is fundamentally a 256-bit random number—a massive integer that serves as the secret foundation of cryptocurrency ownership. To put this in perspective, the total number of possible private keys (2^256) is comparable to the estimated number of atoms in the observable universe.
+A Bitcoin private key is just a 256-bit number — a random integer drawn from a space of 2^256. That space is the entire security argument: it is on the order of the estimated number of atoms in the observable universe, so guessing someone else's key is not a strategy anyone can mount.
 
 ### Generating Private Keys
 
-Let's start with a practical example using Python's `bitcoinlib`:
+Start with Python's `bitcoinlib`:
 
 ```python
 from bitcoinlib.keys import Key
@@ -48,40 +44,36 @@ Private Key (WIF): L1aW4aubDFB7yfras2S1mN3bqg9w3KmCPSM3Qh4rQG9E1e84n5Bd
 
 ```
 
-The hexadecimal representation contains exactly 64 characters (each representing 4 bits), totaling 256 bits or 32 bytes. This format is mathematically precise but not human-friendly for storage or import/export operations.
+The hex form is exactly 64 characters — 256 bits, 32 bytes — and it is what the math actually operates on. It is also unforgiving: mistype one character and you get a different, perfectly valid-looking key with no warning. WIF exists to close that gap.
 
 ### Wallet Import Format (WIF)
 
-The Wallet Import Format (WIF) addresses the usability challenges of raw hexadecimal private keys by applying Base58Check encoding. This encoding:
+WIF wraps the raw key in Base58Check. That wrapping adds a checksum so a typo is caught before it costs you anything, drops the visually ambiguous characters (`0`, `O`, `I`, `l`), and gives every wallet one standard string to import and export.
 
-- Adds error detection through checksums
-- Eliminates visually confusing characters (0, O, I, l)
-- Provides a standardized format for wallet import/export
+The encoding runs in four steps:
 
-The WIF encoding process follows these steps:
-
-1. **Add version prefix**: `0x80` for mainnet, `0xEF` for testnet
-2. **(Optional) Add compression flag**: If the corresponding public key will be compressed, append `0x01` to the payload. This step changes the final Base58 prefix of the WIF
-2. **Calculate checksum**: Apply SHA256(SHA256(data)) and take first 4 bytes
-3. **Apply Base58 encoding**: Convert to human-readable format
+1. **Add a version prefix**: `0x80` for mainnet, `0xEF` for testnet.
+2. **(Optional) Add a compression flag**: if the matching public key will be compressed, append `0x01` to the payload. This single byte is what changes the final Base58 prefix of the WIF.
+3. **Calculate the checksum**: take `SHA256(SHA256(data))` and keep the first 4 bytes.
+4. **Base58-encode** the result into the human-readable string.
 
 ![WIF encoding flow](./resources/wif-encoding-flow.png)
 
 
 *Figure 1-1: WIF encoding transforms a 32-byte private key into a Base58Check encoded string*
 
-The resulting WIF strings have distinctive prefixes:
+The prefix tells you what you are holding at a glance:
 
-- **L** or **K**: Mainnet private keys
-- **c**: Testnet private keys
+- **L** or **K**: mainnet private key (compressed)
+- **c**: testnet private key
 
-## Public Keys: Cryptographic Verification Points
+## 1.3 Public Keys: Cryptographic Verification Points
 
-Public keys in Bitcoin are points on the secp256k1 elliptic curve, derived from private keys through elliptic curve multiplication. While the mathematical details involve complex curve arithmetic, the practical implementation is straightforward.
+A public key is a point on the secp256k1 elliptic curve, obtained by multiplying the private key into the curve's fixed base point. The arithmetic behind that multiplication is what makes the step irreversible; in code it is a single attribute access.
 
 ### ECDSA and secp256k1
 
-Bitcoin uses the secp256k1 curve for its elliptic curve digital signature algorithm (ECDSA). The secp256k1 curve is defined by the equation:
+Bitcoin signs with ECDSA over the secp256k1 curve, defined by:
 
 ```
 y² = x³ + 7
@@ -92,34 +84,30 @@ y² = x³ + 7
 
 *Figure 1-2: The secp256k1 elliptic curve used by Bitcoin*
 
-Without diving into the mathematical complexities, understand that:
-
-- Each private key `k` generates a unique point `(x, y)` on the curve
-- This relationship is computationally irreversible
-- The curve's properties ensure cryptographic security
+For everything in this book, two properties are enough: every private key `k` maps to exactly one point `(x, y)` on the curve, and that map cannot be run in reverse.
 
 ### Compressed vs Uncompressed Public Keys
 
-Public keys can be represented in two formats:
+A public key can be written two ways.
 
-**Uncompressed Format (65 bytes):**
+**Uncompressed (65 bytes):**
 
 ```
 04 + x-coordinate (32 bytes) + y-coordinate (32 bytes)
 
 ```
 
-**Compressed Format (33 bytes):**
+**Compressed (33 bytes):**
 
 ```
 02/03 + x-coordinate (32 bytes)
 
 ```
 
-The compression works because the elliptic curve's mathematical properties allow reconstructing the y-coordinate from the x-coordinate, knowing only whether y is even or odd:
+Compression works because the curve equation lets you recover `y` from `x` alone, once you know whether `y` is even or odd — and that single bit rides in the prefix:
 
-- `02` prefix: y-coordinate is even
-- `03` prefix: y-coordinate is odd
+- `02`: y is even
+- `03`: y is odd
 
 ```python
 # Generate public keys in both formats
@@ -139,15 +127,11 @@ Uncompressed: 0450be5f...03162a90
 
 ```
 
-Modern Bitcoin implementations exclusively use compressed public keys due to their smaller size and equivalent security.
+Everything modern uses the compressed form: half the bytes, identical security.
 
 ### X-Only Public Keys: Taproot's Innovation
 
-Taproot introduces **x-only public keys**, using only the x-coordinate without the y-coordinate parity information. This 32-byte format:
-
-- Reduces transaction sizes
-- Simplifies signature verification
-- Enables key aggregation techniques
+Taproot drops the prefix entirely and works with **x-only public keys** — the bare 32-byte x-coordinate. The parity byte disappears because Taproot fixes the convention (a key is always taken with even `y`), which trims a byte off every key and is what lets Schnorr key aggregation stay clean. From Chapter 5 onward, this is the format in play.
 
 ```python
 # Taproot uses x-only public keys (32 bytes)
@@ -156,28 +140,26 @@ print(f"X-only Public Key: {taproot_pubkey}")
 
 ```
 
-This innovation plays a crucial role in Taproot's efficiency improvements, which we'll explore in detail in later chapters.
+## 1.4 Address Generation: From Public Keys to Payment Destinations
 
-## Address Generation: From Public Keys to Payment Destinations
+A Bitcoin address is **not** a public key. It is an encoded hash of one, and that extra hashing step buys three things at once:
 
-Bitcoin addresses are **not** public keys—they are encoded hashes of public keys. This additional layer provides:
-
-- **Privacy**: Addresses don't directly reveal public keys
-- **Quantum resistance**: Hash functions provide post-quantum security
-- **Error detection**: Encoding includes checksums
+- **Privacy**: the public key stays hidden until you spend.
+- **A hedge against the curve breaking**: a hash sits in front of the elliptic-curve key, so a future weakness in secp256k1 does not immediately expose unspent funds.
+- **Error detection**: the encoding carries a checksum.
 
 ### The Address Generation Process
 
-All Bitcoin addresses follow a similar pattern:
+Every Bitcoin address is built the same way:
 
-1. **Hash the public key**: Apply SHA256 followed by RIPEMD160（or Hash160)
-2. **Add metadata**: Version bytes and script type information
-3. **Add checksum**: Error detection mechanism
-4. **Encode**: Base58Check or Bech32 encoding
+1. **Hash the public key**: SHA256 followed by RIPEMD160 (together, Hash160).
+2. **Add metadata**: version bytes and script-type information.
+3. **Add a checksum**: the error-detection bytes.
+4. **Encode**: Base58Check or Bech32 / Bech32m.
 
 ![Legacy bitcoin address flow](./resources/Bitcoin_address_legacy.png)
 
-*Figure 1-3: Converting a public key to a Bitcoin address through hashing and encoding in a Legacy way*
+*Figure 1-3: Converting a public key to a Bitcoin address through hashing and encoding in the Legacy way*
 
 ```python
 # Generate different address types from the same key
@@ -203,11 +185,11 @@ Taproot:            bc1plz0h3rlj2zvn88pgywqtr9k3df3p75p3ltuxh0
 
 ```
 
-## Address Types and Encoding Formats
+## 1.5 Address Types and Encoding Formats
 
 ### Base58Check Encoding
 
-Base58Check encoding, used for legacy addresses, eliminates visually similar characters and includes error detection:
+Base58Check, used for legacy addresses, drops visually similar characters and folds in a checksum.
 
 **Excluded characters:** `0` (zero), `O` (capital o), `I` (capital i), `l` (lowercase L)
 
@@ -215,39 +197,39 @@ Base58Check encoding, used for legacy addresses, eliminates visually similar cha
 
 - Prefix: `1`
 - Format: Base58Check encoded
-- Usage: Original Bitcoin address format
+- Usage: the original Bitcoin address format
 - Example: `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa`
 
 **P2SH (Pay-to-Script-Hash):**
 
 - Prefix: `3`
 - Format: Base58Check encoded
-- Usage: Multi-signature and wrapped SegWit addresses
+- Usage: multi-signature and wrapped SegWit addresses
 - Example: `3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy`
 
 ### Bech32 Encoding: SegWit's Innovation
 
-Bech32 encoding, introduced with SegWit, provides superior error detection and correction capabilities:
+Bech32, introduced with SegWit, not only detects common typos but can often point at which character is wrong.
 
 **P2WPKH (Pay-to-Witness-Public-Key-Hash):**
 
 - Prefix: `bc1q`
 - Format: Bech32 encoded
-- Benefits: Lower fees, better error detection
+- Benefits: lower fees, stronger error detection
 - Example: `bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080`
 
 ### Bech32m Encoding: Taproot's Enhancement
 
-Taproot addresses use Bech32m, an improved version of Bech32:
+Taproot addresses use Bech32m, a tweaked Bech32 that fixes an edge case in the original checksum.
 
 **P2TR (Pay-to-Taproot):**
 
 - Prefix: `bc1p`
 - Format: Bech32m encoded
-- Benefits: Enhanced privacy, script flexibility
+- Benefits: key-path and script-path spends share one address format
 - Example: `bc1plz0h3rlj2zvn88pgywqtr9k3df3p75p3ltuxh0`
 
-## Address Format Comparison
+## 1.6 Address Format Comparison
 
 | Address Type | Encoding | Data Size | Address Length | Prefix | Primary Use Case |
 | --- | --- | --- | --- | --- | --- |
@@ -256,19 +238,15 @@ Taproot addresses use Bech32m, an improved version of Bech32:
 | **P2WPKH** | Bech32 | 21 bytes | 42-46 chars | `bc1q...` | SegWit payments |
 | **P2TR** | Bech32m | 33 bytes | 58-62 chars | `bc1p...` | Taproot payments |
 
-While address encoding involves many subtle rules—like version bytes, checksums, and different encodings (Base58Check, Bech32, Bech32m)—it’s more important to understand the general idea:
+Address encoding has plenty of fiddly rules — version bytes, checksums, three different schemes — but the idea underneath is simpler than the rules suggest:
 
-Addresses are for humans. They’re just a user-friendly representation of locking scripts (scriptPubKey), not a required component of the protocol itself.
+Addresses are for humans. They are a user-friendly stand-in for a locking script (scriptPubKey), not a part of the protocol itself. Once you recognize the prefix (`1`, `3`, `bc1q`, `bc1p`), you already know which script sits behind it. From the node's point of view, Bitcoin never stores addresses — only scripts.
 
-Once you recognize the prefix (1, 3, bc1q, bc1p), you already know what kind of script is behind it. From the node’s perspective, Bitcoin never stores addresses—only scripts.
+Later chapters keep their attention on that script — the actual scriptPubKey behind each address type. That is where the real logic lives, and where Bitcoin's programmability begins. If you can predict the script behind an address, you can reason about how it is spent.
 
+## 1.7 The Derivation Model
 
-In later chapters, we’ll focus on what truly matters: the actual scriptPubKey associated with each address type. That’s where the real logic lives—and where Bitcoin’s scripting and programmability begin. If you can predict the script behind the address, you can reason about how it’s spent.
-
-
-## The Derivation Model
-
-Understanding the derivation relationships between keys and addresses is crucial. The diagram below brings together the entire address derivation pipeline—from private key generation to the final on-chain script. While most wallet users only see the address, developers need to trace the full path to understand how Bitcoin enforces ownership and spending conditions.
+One diagram ties the whole chain together — from generating a key down to the script that actually lands on-chain. Wallet users only ever see the address; as a developer you need the full path, because that path is what the node enforces.
 
 ![Key-pubkey-address relationships](./resources/TheDerivationModel.png)
 
@@ -286,31 +264,12 @@ Address (Base58/Bech32)
 ScriptPubKey (locking script on-chain)
 ```
 
-**Security properties:**
+The chain is asymmetric by design:
 
-- **Forward derivation**: Each step is computationally easy
-- **Reverse derivation**: Each step is computationally infeasible
-- **Hash collision resistance**: Extremely unlikely for different public keys to produce the same address
+- **Forward**: each step is cheap to compute.
+- **Reverse**: each step is computationally infeasible.
+- **Collision resistance**: two different public keys producing the same address is vanishingly unlikely.
 
+## 1.8 What Carries Into Taproot
 
-## Practical Implications for Taproot
-
-As we'll see in subsequent chapters, Taproot builds upon these foundational concepts:
-
-- **X-only public keys** reduce transaction size and enable key aggregation
-- **Bech32m encoding** provides robust error detection for complex scripts
-- **Unified address format** makes multisig and single-sig transactions indistinguishable
-
-Understanding these encoding and key formats prepares us for Taproot's more sophisticated features, where multiple spending conditions can be elegantly combined into a single address format.
-
-## Chapter Summary
-
-This chapter established the cryptographic foundation for Bitcoin transactions:
-
-- Private keys are 256-bit random numbers encoded in WIF format for usability
-- Public keys are elliptic curve points, with compressed format being standard
-- Addresses are encoded hashes of public keys, not the public keys themselves
-- Different address types use different encoding schemes: Base58Check, Bech32, and Bech32m
-- Taproot introduces x-only public keys and Bech32m encoding for enhanced efficiency
-
-All the components introduced here—keys, hashes, encodings—are what Bitcoin Script ultimately manipulates or validates. In the next chapter, we'll explore how these keys and addresses interact with Bitcoin Script—the programming language that defines spending conditions and enables Taproot's advanced capabilities.
+Three things from this chapter resurface the moment Taproot appears: **x-only public keys** (Chapter 5), **Bech32m** as the address format for P2TR, and the idea that an address is only ever a stand-in for a locking script. Hold onto that last point in particular — from here on the interesting question is never "what is the address" but "what script is behind it, and how is it spent." Chapter 2 starts answering that by introducing Bitcoin Script itself.
