@@ -1,20 +1,20 @@
-# Chapter 7: Taproot Dual-Leaf Script Tree - Complete Implementation of Hash Lock and Bob Script
+# Chapter 7: Taproot Dual-Leaf Script Tree — Hash Lock and Bob Script
 
-## From Single-Leaf to Dual-Leaf: The True Power of Taproot Script Trees
+## From One Leaf to Two
 
-In the previous chapter, we mastered the complete implementation of single-leaf Taproot Script Path through Alice's Hash Lock contract. However, Taproot's true power lies in its **multi-branch script tree** architecture—the ability to elegantly organize multiple different spending conditions within a single address, implementing complex conditional logic.
+Chapter 6 built a Taproot address with a single leaf — one hash-lock script, alongside Alice's key path. With one leaf, the TapLeaf hash *was* the Merkle root, and the control block carried nothing but the internal key. This chapter adds a second leaf, and that one change pulls in the rest of the script-tree machinery: a real Merkle root computed from two branches, and a control block that has to carry a sibling hash to prove its leaf belongs.
 
-Imagine this business scenario: Alice wants to create a digital escrow contract that supports both automatic unlocking based on secret information (Hash Lock) and provides Bob with direct private key control permissions. In traditional Bitcoin, this would require complex multisignature scripts or multiple independent addresses. Taproot's dual-leaf script tree can elegantly integrate these two conditions into a single address:
+The contract we build gives one address three independent ways to spend:
 
-- **Script Path 1**: Hash Lock script, anyone who knows "helloworld" can spend
-- **Script Path 2**: Bob Script, only Bob's private key holder can spend  
-- **Key Path**: Alice as the internal key holder can spend directly (maximum privacy)
+- **Script path 1** — a hash lock: anyone who knows "helloworld" can spend.
+- **Script path 2** — Bob's script: only Bob's private key can spend.
+- **Key path** — Alice, the internal-key holder, can spend directly (the quiet, private default).
 
-The elegance of this design lies in the fact that external observers cannot distinguish whether this is a simple payment or a complex three-path conditional contract. Only during actual spending is the used path selectively revealed.
+As in Chapter 6, none of this is visible from outside. Until someone spends, the address is indistinguishable from a plain payment; spending reveals only the one path taken.
 
-## Merkle Structure of Dual-Leaf Script Trees
+## The Merkle Structure of a Two-Leaf Tree
 
-Unlike single-leaf trees that directly use TapLeaf hash as the Merkle root, dual-leaf script trees require building a true Merkle tree:
+With one leaf there was nothing to combine. With two, you build an actual Merkle tree:
 
 ```
         Merkle Root
@@ -23,36 +23,33 @@ Unlike single-leaf trees that directly use TapLeaf hash as the Merkle root, dual
 (Hash Script) (Bob Script)
 ```
 
-**Technical Implementation Key Points**:
+Three steps, and the second is the genuinely new one:
 
-1. **TapLeaf Hash Calculation**: Each script separately calculates its TapLeaf hash
-2. **TapBranch Hash Calculation**: Calculate TapBranch hash after sorting the two TapLeaf hashes lexicographically  
-3. **Control Block Construction**: Each script needs to include its sibling node hash as Merkle proof
+1. **TapLeaf hash** — each script hashes to its own leaf, exactly as in Chapter 6.
+2. **TapBranch hash** — the two leaf hashes are sorted lexicographically, then hashed together into the parent. The sort is what makes the root deterministic: whichever order you list the scripts, the smaller hash always goes first, so everyone computes the same root.
+3. **Control block** — to spend one leaf, you have to prove it sits under that root. The proof is the *other* leaf's hash, carried in the control block, so a verifier can recompute the branch and land on the root.
 
-Let's deeply understand how all this works through actual on-chain transaction data.
+The rest of the chapter is that structure, seen from real on-chain data.
 
-## Practical Case Study: Complete Analysis Based On-Chain Transactions
+## Two On-Chain Transactions
 
-We will analyze the complete implementation of dual-leaf script trees based on two real testnet transactions:
+We'll work backwards from two real testnet spends of the same dual-leaf address.
 
-### Transaction 1: Hash Script Path Spending
+**Transaction 1 — hash-script path**
+- TXID: [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true)
+- Address: `tb1p93c4...gq9a4w3z`
+- Spent with the preimage "helloworld".
 
-- **Transaction ID**: [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true)
-- **Taproot Address**: `tb1p93c4...gq9a4w3z`
-- **Spending Method**: Script Path (using preimage "helloworld")
+**Transaction 2 — Bob-script path**
+- TXID: [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true)
+- Address: `tb1p93c4...gq9a4w3z`
+- Spent with Bob's signature.
 
-### Transaction 2: Bob Script Path Spending
+The two spends share the **same address** — which is the whole point. Both come out of one dual-leaf tree; each just reveals a different leaf. (They spend two different fundings of that address, since a UTXO can only be spent once.)
 
-- **Transaction ID**: [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true)
-- **Taproot Address**: `tb1p93c4...gq9a4w3z`
+## Commit: Building the Two-Leaf Tree
 
-- **Spending Method**: Script Path (using Bob's private key signature)
-
-Note that these two transactions use the **exact same Taproot address**, proving they indeed originate from the same dual-leaf script tree!
-
-## Code Walkthrough: Commit Phase - Dual-Leaf Script Tree Construction
-
-First, let's reconstruct the complete code that generates this Taproot address:
+Here is the code that produces that address:
 
 ```python
 def create_dual_leaf_taproot():
@@ -99,19 +96,18 @@ def create_dual_leaf_taproot():
 # Output: tb1p93c4...9a4w3z
 ```
 
-**Key Technical Details**:
+Two things to notice, because they decide the rest:
 
-1. **Flat Structure**: `all_leafs = [hash_script, bob_script]` indicates two scripts at the same level
-2. **Index Order**: hash_script is index 0, bob_script is index 1
-3. **Address Consistency**: Two different Script Path spends using the same address proves correct script tree construction
+- **The tree is flat**: `all_leafs = [hash_script, bob_script]` — two leaves at the same level.
+- **Order fixes the index**: `hash_script` is index 0, `bob_script` is index 1. That index is what you'll pass to the control block when spending each leaf, so it has to match.
 
-## Code Walkthrough: Reveal Phase - Dual-Leaf Script Path Spending Implementation
+The library takes that list, computes both TapLeaf hashes, sorts and combines them into the Merkle root, and tweaks Alice's key into the output key. If two different script-path spends both rebuild this same address, the tree was constructed identically each time — which is exactly the check we lean on below.
 
-After mastering the dual-leaf script tree construction principles, let's see how to implement two different Script Path spends in the Reveal phase.
+## Reveal: Spending Each Script Path
 
-### Hash Script Path Spending Core Code
+### Hash-script path
 
-Based on transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true) implementation:
+From transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true):
 
 ```python
 def hash_script_path_spending():
@@ -161,9 +157,11 @@ def hash_script_path_spending():
     return tx
 ```
 
-### Bob Script Path Spending Core Code
+This is the Chapter 6 hash-lock spend, with one change that matters: the control block is built from `all_leafs` (both scripts) at index 0. The library needs the whole tree to know what the sibling is — index 0 means "this is the hash script; the other leaf is its sibling, include its hash as the proof." With a single leaf there was no sibling to include; now there is.
 
-Based on transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true) implementation:
+### Bob-script path
+
+From transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true):
 
 ```python
 def bob_script_path_spending():
@@ -221,54 +219,55 @@ def bob_script_path_spending():
     return tx
 ```
 
-**Key Technical Comparison**:
+Two differences from the hash path, both following from the fact that Bob's leaf is a signature check rather than a hash check:
 
-| Aspect | Hash Script Path | Bob Script Path |
-|--------|------------------|-----------------|
-| **Script Index** | 0 (first script) | 1 (second script) |
-| **Input Data** | preimage hex | Schnorr signature |
-| **Verification Method** | Hash matching | Digital signature verification |
-| **Control Block** | Contains Bob Script's TapLeaf hash | Contains Hash Script's TapLeaf hash |
+- **The control block is at index 1** — this is the second leaf, so its sibling is the *hash* script's hash.
+- **The spend signs**, where the hash path didn't. The signing parameters are worth reading closely:
+  - `script_path=True` — sign for a leaf, not the key path.
+  - `tapleaf_script=bob_script` — singular, because you sign against the *one* leaf you're executing (contrast Chapter 6's key-path `tapleaf_scripts`, plural, which needed the whole tree to rebuild the tweak).
+  - `tweak=False` — a script-path signature is checked by `OP_CHECKSIG` against Bob's plain key inside the script, so the key is *not* tweaked. This is the opposite of the key path, where the whole point was signing with the tweaked key.
 
-## In-Depth Control Block Analysis
+The witness shape is the Chapter 6 one — data, then script, then control block — with a signature standing in for the preimage:
 
-In dual-leaf script trees, each script's Control Block contains its sibling node hash as Merkle proof. Let's analyze the actual on-chain data:
+| | Hash-script path | Bob-script path |
+|---|---|---|
+| Script index | 0 | 1 |
+| Witness `[0]` | preimage hex | Schnorr signature |
+| How the script checks it | hash match | signature check |
+| Control block's sibling | Bob script's TapLeaf hash | hash script's TapLeaf hash |
 
-### Hash Script Path Control Block
+## Control Blocks, Read From the Chain
 
-**Data extracted from transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true)**:
+The table's last row is the new idea, so look at it in the raw bytes. Each control block carries the *other* leaf's hash — that's the Merkle proof.
+
+**Hash-script path**, from [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true):
 
 ```
 Control Block: c050be5f...8105cf9df
 
-Structure breakdown:
-├─ c0: Leaf version (0xc0)
-├─ 50be5fc4...126bb4d3: Alice internal pubkey
-└─ 2faaa677...8105cf9df: Bob Script's TapLeaf hash
+├─ c0: leaf version (0xc0)
+├─ 50be5fc4...126bb4d3: Alice's internal pubkey
+└─ 2faaa677...8105cf9df: Bob script's TapLeaf hash  ← the sibling
 ```
 
-### Bob Script Path Control Block
-
-**Data extracted from transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true)**:
+**Bob-script path**, from [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true):
 
 ```
 Control Block: c050be5f...8f10f659e
 
-Structure breakdown:
-├─ c0: Leaf version (0xc0)
-├─ 50be5fc4...126bb4d3: Alice internal pubkey (same!)
-└─ fe78d852...8f10f659e: Hash Script's TapLeaf hash
+├─ c0: leaf version (0xc0)
+├─ 50be5fc4...126bb4d3: Alice's internal pubkey (same!)
+└─ fe78d852...8f10f659e: hash script's TapLeaf hash  ← the sibling
 ```
 
-**Important Observations**:
+Two things to read off these directly:
 
-- Both Control Blocks use the **same internal public key**
-- Merkle Path portions are **sibling node** TapLeaf hashes
-- This is exactly the manifestation of Merkle tree structure!
+- The internal pubkey is **identical** in both — same Alice, same tree.
+- The trailing 32 bytes are **swapped**: each leaf carries its sibling's hash. The hash path carries Bob's leaf hash; Bob's path carries the hash leaf's hash. That swap *is* the Merkle proof — give a verifier the one leaf plus its sibling's hash, and they can rebuild the branch and the root.
 
-### Control Block Verification Algorithm
+### Verifying a control block = rebuilding the address
 
-Verifying Control Block essentially means **address reconstruction verification**:
+Checking a control block comes down to one thing: take the revealed leaf, the sibling hash from the control block, and the internal key, and see whether they rebuild the address the funds were sent to.
 
 ```python
 def verify_control_block_and_address_reconstruction():
@@ -354,25 +353,23 @@ def verify_control_block_and_address_reconstruction():
 verify_control_block_and_address_reconstruction()
 ```
 
-## Script Path 1: Hash Script Execution Analysis
+The function makes the swap concrete: it computes both TapLeaf hashes from the revealed scripts, then checks that each control block's trailing 32 bytes really are the *other* leaf's hash. Once that holds, it sorts the two hashes, combines them with TapBranch into the Merkle root, tweaks Alice's key, and arrives back at `tb1p93c4...`. Both paths land on the same address — which is what proves both leaves were committed to it in the first place.
 
-Now let's analyze the complete execution process of Hash Script Path in detail. Based on actual data from transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true):
+## Script Path 1: Hash Script
 
-### Witness Data Structure
+From transaction [`b61857a0...78a2e430`](https://mempool.space/testnet/tx/b61857a05852482c9d5ffbb8159fc2ba1efa3dd16fe4595f121fc35878a2e430?showDetails=true).
+
+**Witness stack**
 
 ```
-Witness Stack:
 [0] 68656c6c6f776f726c64                             (preimage_hex)
 [1] a820936a...f8f8f07af8851                         (script_hex)
 [2] c050be5f...8105cf9df                             (control_block)
 ```
 
-### Script Bytecode Parsing
-
-**Hash Script**: `a820936a...f8f8f07af8851`
+**Script bytecode** — `a820936a...f8f8f07af8851`:
 
 ```
-Bytecode breakdown:
 a8 = OP_SHA256
 20 = OP_PUSHBYTES_32
 936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af = SHA256("helloworld")
@@ -380,94 +377,74 @@ a8 = OP_SHA256
 51 = OP_PUSHNUM_1 (OP_TRUE)
 ```
 
-### Stack Execution Animation - Hash Script Path
+This is the same hash lock from Chapter 6, so the stack walk is the same:
 
-**Executing script**: `OP_SHA256 OP_PUSHBYTES_32 <expected_hash_32bytes> OP_EQUALVERIFY OP_PUSHNUM_1`
-
-#### 0. Initial state: Load script input
+**Start** — the preimage loads onto the stack:
 
 ```
-| 68656c6c...6f726c64 | (Preimage "helloworld" in hex)
+| 68656c6c...6f726c64 | (preimage "helloworld" in hex)
 └─────────────────────┘
 ```
 
-**(Preimage "helloworld" hex representation already on stack)**
-
-#### 1. OP_SHA256: Calculate SHA256 hash of top stack element
+**OP_SHA256** — pops the preimage, pushes its SHA256:
 
 ```
-| 936a185c...8f8f07af | (Computed hash)
+| 936a185c...8f8f07af | (computed hash)
 └─────────────────────┘
 ```
 
-**(SHA256("helloworld") = 936a185c...07af)**
-
-#### 2. OP_PUSHBYTES_32: Push expected hash value
+**OP_PUSHBYTES_32** — pushes the script's expected hash:
 
 ```
-| 936a185c...8f8f07af | (Expected hash)
-| 936a185c...8f8f07af | (Computed hash)
+| 936a185c...8f8f07af | (expected hash)
+| 936a185c...8f8f07af | (computed hash)
 └─────────────────────┘
 ```
 
-**(Two identical hash values now at stack top)**
-
-#### 3. OP_EQUALVERIFY: Verify hash equality
+**OP_EQUALVERIFY** — pops both, compares; equal, so execution continues:
 
 ```
-|                     | (Empty stack)
+|                     | (empty stack)
 └─────────────────────┘
 ```
 
-**(Verification successful: expected_hash == computed_hash, both elements removed)**
-
-#### 4. OP_PUSHNUM_1: Push success flag
+**OP_PUSHNUM_1** — pushes 1, a non-zero top of stack, marking the script satisfied:
 
 ```
-|          01          | (Script execution successful)
+|          01          |
 └──────────────────────┘
 ```
 
-**(Script execution successful: non-zero value at stack top)**
+## Script Path 2: Bob Script
 
-## Script Path 2: Bob Script Execution Analysis
+From transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true). This leaf is new — a P2PK check instead of a hash lock.
 
-Next, let's analyze Bob Script Path execution process. Based on actual data from transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true):
-
-### Witness Data Structure
+**Witness stack**
 
 ```
-Witness Stack:
 [0] 26a0eadc...31f9f1c5c                            (bob_signature)
 [1] 2084b595...ceef63af5ac                          (script_hex)
 [2] c050be5f...8f10f659e                            (control_block)
 ```
 
-### Script Bytecode Parsing
-
-**Bob Script**: `2084b595...ceef63af5ac`
+**Script bytecode** — `2084b595...ceef63af5ac`:
 
 ```
-Bytecode breakdown:
 20 = OP_PUSHBYTES_32
 84b5951609b76619a1ce7f48977b4312ebe226987166ef044bfb374ceef63af5 = Bob's x-only pubkey
 ac = OP_CHECKSIG
 ```
 
-### Stack Execution Animation - Bob Script Path
+The script is two steps: push Bob's key, then check a signature against it.
 
-**Executing script**: `OP_PUSHBYTES_32 <bob_xonly_pubkey> OP_CHECKSIG`
-
-#### 0. Initial state: Load script input
+**Start** — Bob's signature loads onto the stack (it came from the witness, not the script):
 
 ```
 | 26a0eadc...1f9f1c5c | (Bob's 64-byte signature)
 └─────────────────────┘
 ```
 
-**(Bob's 64-byte Schnorr signature already on stack)**
-
-#### 1. OP_PUSHBYTES_32: Push Bob's x-only pubkey
+**OP_PUSHBYTES_32** — the script pushes Bob's x-only pubkey on top:
 
 ```
 | 84b59516...eef63af5 | (Bob's 32-byte pubkey)
@@ -475,42 +452,29 @@ ac = OP_CHECKSIG
 └─────────────────────┘
 ```
 
-**(Bob's 32-byte x-only pubkey pushed to stack top)**
-
-#### 2. OP_CHECKSIG: Verify Schnorr signature
+**OP_CHECKSIG** — pops the key and the signature, runs BIP340 Schnorr verification against the transaction, and pushes 1 if it holds:
 
 ```
-|          01          | (Signature is valid)
+|          01          | (signature valid)
 └──────────────────────┘
 ```
 
-**(Signature verification successful: Bob's private key corresponds to this pubkey, and signature is valid for transaction data)**
+So the two leaves end the same way — a 1 on top of the stack — but get there differently: the hash leaf proves knowledge of a *secret*, the Bob leaf proves possession of a *key*. One address, two unlock conditions, and only the one you use is ever revealed.
 
-**Verification Process Details**:
+## What Changed From the Single-Leaf Case
 
-1. Pop pubkey from stack: `84b59516...ceef63af5`
-2. Pop signature from stack: `26a0eadc...31f9f1c5c`
-3. Use BIP340 Schnorr signature verification algorithm to verify signature validity
-4. Verification successful, push 1 to indicate TRUE
+Side by side, the single-leaf and dual-leaf cases differ in exactly one place — how the Merkle root is formed:
 
-## Dual-Leaf vs Single-Leaf: Merkle Calculation Differences
-
-By comparing single-leaf and dual-leaf implementations, we can clearly see the differences in Merkle tree calculations:
-
-### Single-Leaf Script Tree
+**Single leaf** — the root *is* the leaf:
 
 ```
 Merkle Root = TapLeaf Hash
             = Tagged_Hash("TapLeaf", 0xc0 + len(script) + script)
 ```
 
-**Characteristics**:
+The control block carries only the internal key; there's no sibling, so no Merkle path.
 
-- Simple and direct, TapLeaf hash serves as Merkle root
-- Control Block only contains internal pubkey, no Merkle path
-- Suitable for simple single-condition verification scenarios
-
-### Dual-Leaf Script Tree
+**Two leaves** — the root is a branch over both:
 
 ```
 Merkle Root = TapBranch Hash
@@ -520,28 +484,23 @@ TapLeaf_A = Tagged_Hash("TapLeaf", 0xc0 + len(script_A) + script_A)
 TapLeaf_B = Tagged_Hash("TapLeaf", 0xc0 + len(script_B) + script_B)
 ```
 
-**Characteristics**:
+The lexicographic sort makes the root independent of listing order, and the control block now carries one sibling hash.
 
-- True Merkle tree structure, requires TapBranch calculation
-- Lexicographic ordering ensures deterministic results
-- Control Block contains sibling node hash as Merkle proof
-- Supports complex multi-condition verification scenarios
+That sibling hash is the only thing that grows the control block, and it grows predictably — one hash per level of tree depth:
 
-### Control Block Size Comparison
+| Tree | Control block | Contents |
+|------|---------------|----------|
+| Single leaf | 33 bytes | version+parity, internal pubkey |
+| Two leaves | 65 bytes | + one sibling hash |
+| Four leaves | 97 bytes | + a second sibling hash (one per level) |
 
-| Script Tree Type | Control Block Size | Structure |
-|------------------|-------------------|-----------|
-| Single-leaf | 33 bytes | [version+parity] + [internal_pubkey] |
-| Dual-leaf | 65 bytes | [version+parity] + [internal_pubkey] + [sibling_hash] |
-| Four-leaf | 97 bytes | [version+parity] + [internal_pubkey] + [sibling_hash] + [parent_sibling_hash] |
+Each extra level of depth adds 32 bytes to the proof — a Merkle path, growing with the log of the number of leaves, not the count of them.
 
-As script tree depth increases, Control Block grows linearly, but is still much more efficient than traditional multisignature scripts.
+## Patterns for Building Two-Leaf Taproot
 
-## Programming Best Practices: Building Dual-Leaf Taproot Applications
+The two spends above generalize into a small set of reusable pieces.
 
-Based on the previous analysis, let's summarize development best practices for dual-leaf Taproot applications:
-
-### 1. Standard Commit Phase Workflow
+**Commit — build the tree (index order matters):**
 
 ```python
 def build_dual_leaf_taproot(alice_key, bob_key, preimage):
@@ -558,7 +517,7 @@ def build_dual_leaf_taproot(alice_key, bob_key, preimage):
     return taproot_address, leafs
 ```
 
-### 2. Universal Script Path Spending Template
+**Reveal — one template for any leaf:**
 
 ```python
 def spend_script_path(script_index, input_data, leafs, internal_key, taproot_addr):
@@ -580,25 +539,22 @@ def spend_script_path(script_index, input_data, leafs, internal_key, taproot_add
     return witness
 ```
 
-### 3. Common Errors and Debugging Tips
-
-**Script Index Errors**:
+**The mistake to watch for** — a control block whose index doesn't match the script you actually reveal. The library builds the wrong Merkle proof and verification fails:
 
 ```python
-# [Wrong] Error: Control Block script index doesn't match actually used script
-control_block = ControlBlock(..., leafs, 1, ...)  # Index 1
-witness = [..., leafs[0].to_hex(), ...]           # But using index 0 script
+# wrong — index and revealed script disagree
+control_block = ControlBlock(..., leafs, 1, ...)  # index 1
+witness = [..., leafs[0].to_hex(), ...]           # but revealing leaf 0
 
-# [Correct] Ensure index consistency
+# right — drive both from one variable
 script_index = 1
 control_block = ControlBlock(..., leafs, script_index, ...)
 witness = [..., leafs[script_index].to_hex(), ...]
 ```
 
-**Merkle Path Verification Failure**:
+If a script-path spend fails the Merkle check, this is the first thing to inspect — pull the trailing 32 bytes off the control block and confirm they really are the sibling you expect:
 
 ```python
-# Debugging tip: Verify Control Block's sibling node hash
 def debug_control_block(control_block_hex, script_hex, expected_sibling):
     cb = bytes.fromhex(control_block_hex)
     actual_sibling = cb[33:65]  # sibling node hash
@@ -608,51 +564,32 @@ def debug_control_block(control_block_hex, script_hex, expected_sibling):
     print(f"Match result: {actual_sibling == expected_sibling}")
 ```
 
-## Performance and Privacy Comparison Analysis
+## Cost and Privacy of the Three Paths
 
-Through actual on-chain data, we can quantitatively analyze performance and privacy characteristics of different spending methods:
+With three ways to spend one address, here's what each costs and reveals.
 
-### Size and Witness Comparison
+**Sizes** (from the on-chain spends):
 
-- **Key Path**
-  - Transaction Size: ~110 bytes
-  - Witness Data: `64-byte signature`
+- **Key path** — ~110 bytes; witness is a 64-byte signature.
+- **Hash script** — ~180 bytes; witness is preimage + script + control block.
+- **Bob script** — ~185 bytes; witness is signature + script + control block.
 
-- **Hash Script**
-  - Transaction Size: ~180 bytes
-  - Witness Data: `preimage + script + control_block`
+**Verification, privacy, fee:**
 
-- **Bob Script**
-  - Transaction Size: ~185 bytes
-  - Witness Data: `signature + script + control_block`
+- **Key path** — one signature check; reveals nothing; cheapest (baseline).
+- **Hash script** — hash check plus Merkle verification; reveals the hash lock; ~1.6× the key-path fee.
+- **Bob script** — signature check plus Merkle verification; reveals the P2PK structure; ~1.7×.
 
-### Verification, Privacy, and Fee Comparison
+Three things fall out of these numbers:
 
-- **Key Path**
-  - Verification Complexity: 1 signature verification
-  - Privacy Level: Complete privacy
-  - Relative Fee Cost: Baseline (1.0x)
-
-- **Hash Script**
-  - Verification Complexity: Hash calculation + Merkle verification
-  - Privacy Level: Exposes Hash Lock
-  - Relative Fee Cost: Medium (1.6x)
-
-- **Bob Script**
-  - Verification Complexity: Signature verification + Merkle verification
-  - Privacy Level: Exposes P2PK structure
-  - Relative Fee Cost: Medium (1.7x)
-
-**Key Insights**:
-
-1. **Key Path is always the optimal choice**: Regardless of script tree complexity, Key Path has the highest efficiency and privacy
-2. **Script Path costs are manageable**: Compared to traditional complex scripts, Taproot's additional overhead is within acceptable range
-3. **Value of selective revelation**: Only the actually used path is exposed, unused paths remain private forever
+- **The key path is always the best spend** when it's available — smallest, cheapest, reveals nothing — regardless of how complex the tree behind it is.
+- **The script-path premium is modest** — the extra cost is one script plus a control block, far less than spelling out the equivalent conditions as a classic multisig redeem script.
+- **You only ever pay for the path you take.** The unused leaves never touch the chain; they stay folded into the Merkle root as hashes.
 
 ## Chapter Summary
 
-Through the complete implementation of dual-leaf script trees, we have mastered the key technologies of Taproot multi-path spending: true Merkle tree construction, Control Blocks containing sibling node proofs, and coordination mechanisms for different scripts within the same address. More importantly, we understand Taproot's core philosophy—selective revelation, where only the used path is exposed, achieving a perfect balance between complex functionality and high privacy.
+Adding a second leaf turned the single-leaf shortcut into the real thing: a Merkle tree built with TapBranch over two lexicographically sorted leaves, and control blocks that carry a sibling hash as the Merkle proof. We read both halves of that proof straight off the chain — each leaf's control block holding the *other* leaf's hash — and confirmed that either path rebuilds the same address.
 
-In the next chapter, we will explore **multi-layer nested script trees** and **advanced Taproot application patterns**, learning how to build enterprise-grade blockchain applications supporting more spending conditions, and how to combine time locks, multisignature, and other advanced features to create more complex and practical smart contract systems.
+The payoff is the same selective reveal as Chapter 6, now over more than one condition: one address, a hash lock and a key check and Alice's key path all committed to it, and only the single path actually used ever shown.
 
-Dual-leaf script trees are an important milestone in Taproot application development—they demonstrate how to achieve true functional complexity while maintaining simplicity. This is the essence of Bitcoin Taproot technology: **Simple in appearance, powerful within**.
+**Next.** Chapter 8 scales the tree to four leaves — the Merkle paths get longer, and the control block carries more than one sibling hash (the 97-byte, two-sibling case from the table above), as one address grows to back several spending conditions at once.
