@@ -1,30 +1,30 @@
-# Chapter 3: P2SH Script Engineering - From Multi-signature to Time Locks
+# 第 3 章：P2SH 脚本工程——从多签到时间锁
 
-Pay-to-Script-Hash (P2SH) is where Bitcoin scripting first becomes practical: any script, however complex, can be locked behind a single 20-byte hash and revealed only when the funds are spent. This chapter uses P2SH to build the two patterns that recur through the rest of the book — multisignature and time locks — and traces both through the stack. It sits between the single-signature P2PKH of Chapter 2 and the script trees of Taproot.
+Pay-to-Script-Hash（P2SH）是比特币脚本第一次变得实用的地方：任何脚本，无论多复杂，都能锁在一个 20 字节哈希后面，只在花费时才揭示。本章用 P2SH 搭起后面全书反复出现的两个模式——多签（multisig）和时间锁（time lock）——并把两者都在栈上走一遍。它处在第 2 章的单签 P2PKH 和 Taproot 的脚本树之间。
 
-## 3.1 P2SH Architecture: Scripts Behind the Hash
+## 3.1 P2SH 架构：哈希后面的脚本
 
-P2SH lets any script be represented by a compact 20-byte hash, moving the script's complexity out of the UTXO set and deferring it to spending time.
+P2SH 让任何脚本都能用一个紧凑的 20 字节哈希来代表，把脚本的复杂度移出 UTXO 集，推迟到花费时。
 
-### The Two-Stage Verification Model
+### 两阶段验证模型
 
-P2SH operates through two distinct phases:
+P2SH 分两个清晰的阶段：
 
-**Stage 1: Hash Verification**
+**阶段 1：哈希验证**
 
 ```
 OP_HASH160 <script_hash> OP_EQUAL
 ```
 
-**Stage 2: Script Execution**
+**阶段 2：脚本执行**
 
 ```
 <revealed_script> -> Execute as Bitcoin Script
 ```
 
-### P2SH Address Generation Process
+### P2SH 地址生成过程
 
-P2SH follows the same Hash160 -> Base58Check pattern covered in Chapter 1, but hashes the script instead of a public key:
+P2SH 沿用第 1 章讲过的 Hash160 -> Base58Check 流程，只是哈希的是脚本而不是公钥：
 
 ```
 Script Serialization -> hex_encoded_script
@@ -32,29 +32,29 @@ Hash160(script)     -> 20_bytes_script_hash
 Version + Base58Check -> 3...address (mainnet)
 ```
 
-All P2SH addresses begin with "3" on mainnet and "2" on testnet, immediately distinguishing them from P2PKH addresses.
+所有 P2SH 地址在主网以 "3" 开头、测试网以 "2" 开头，一眼就和 P2PKH 地址区分开。
 
-### ScriptSig Construction Pattern
+### ScriptSig 构造模式
 
-The unlocking script (ScriptSig) for P2SH follows a specific pattern:
+P2SH 的解锁脚本（ScriptSig）遵循一个固定模式：
 
 ```
 <script_data> <serialized_redeem_script>
 ```
 
-Where `<script_data>` contains the values needed to satisfy the redeem script's conditions, and `<serialized_redeem_script>` is the original script whose hash matches the locking script.
+其中 `<script_data>` 是满足赎回脚本（redeem script）条件所需的值，`<serialized_redeem_script>` 是原始脚本——它的哈希要和锁定脚本里的哈希匹配。
 
-## 3.2 2-of-3 Multisig
+## 3.2 2-of-3 多签
 
-A multisig output needs more than one key to spend. A 2-of-3 scheme — any two of three keys — is the common shape for shared custody: no single person can move the funds alone, and no single lost key locks them away either.
+多签输出需要不止一把密钥才能花。2-of-3——三把里任意两把——是共享托管的常见形态：没有任何一个人能独自动用资金，也不会因为一把密钥丢失就把资金锁死。
 
-### The Setup: Three Keys
+### 设定：三把密钥
 
-Three parties each hold a key, and any two of them can authorize a spend:
+三方各持一把密钥，任意两方就能授权一次花费：
 
-- **Alice**, **Bob**, and **Carol** — three keys, two required.
+- **Alice**、**Bob**、**Carol** —— 三把密钥，需要两把。
 
-The redeem script encodes that rule with Bitcoin's `OP_CHECKMULTISIG` opcode:
+赎回脚本用 `OP_CHECKMULTISIG` 把这条规则编码进去：
 
 ```python
 from bitcoinutils.setup import setup
@@ -85,17 +85,17 @@ def create_multisig_p2sh():
     return p2sh_addr, redeem_script
 ```
 
-### bitcoinutils Function Analysis
+### bitcoinutils 函数解析
 
-**`Script([...])` Constructor**: Creates a Script object from a list of opcodes and data. The library automatically handles the encoding of opcodes like `'OP_2'` into their byte representations (`0x52`).
+**`Script([...])` 构造器**：从一个操作码和数据的列表创建 Script 对象。库会自动把 `'OP_2'` 这类操作码编码成它们的字节表示（`0x52`）。
 
-**`P2shAddress.from_script(script)`**: Generates a P2SH address by:
-1. Serializing the script to bytes
-2. Computing Hash160(script) 
-3. Adding version byte (0x05 for mainnet, 0xc4 for testnet)
-4. Applying Base58Check encoding
+**`P2shAddress.from_script(script)`**：生成 P2SH 地址，步骤是：
+1. 把脚本序列化成字节
+2. 计算 Hash160(script)
+3. 加版本字节（主网 0x05、测试网 0xc4）
+4. 做 Base58Check 编码
 
-**Script Serialization**: The redeem script serializes to:
+**脚本序列化**：这个赎回脚本序列化成：
 
 ```text
 522102898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c8519
@@ -104,20 +104,20 @@ def create_multisig_p2sh():
 53ae
 ```
 
-Breaking this down:
-- `52`: OP_2
-- `21`: Push 33 bytes (compressed public key)
-- `02898711...`: Alice's public key
-- `21`: Push 33 bytes  
-- `0284b595...`: Bob's public key
-- `21`: Push 33 bytes
-- `0317aa89...`: Carol's public key
-- `53`: OP_3
-- `ae`: OP_CHECKMULTISIG
+逐字节拆开：
+- `52`：OP_2
+- `21`：压入 33 字节（压缩公钥）
+- `02898711...`：Alice 的公钥
+- `21`：压入 33 字节
+- `0284b595...`：Bob 的公钥
+- `21`：压入 33 字节
+- `0317aa89...`：Carol 的公钥
+- `53`：OP_3
+- `ae`：OP_CHECKMULTISIG
 
-### Spending the Multi-signature UTXO
+### 花费多签 UTXO
 
-When Alice and Bob decide to authorize a payment, they must provide their signatures in the correct order along with the redeem script:
+当 Alice 和 Bob 决定授权一笔支付时，他们必须按正确顺序提供签名，连同赎回脚本：
 
 ```python
 def spend_multisig_p2sh():
@@ -144,36 +144,36 @@ def spend_multisig_p2sh():
     ])
 ```
 
-### bitcoinutils Signature Functions
+### bitcoinutils 签名函数
 
-**`private_key.sign_input(tx, input_index, script)`**: Creates an ECDSA signature for a specific transaction input using the provided script for the signature hash calculation. The script parameter should be the redeem script for P2SH inputs.
+**`private_key.sign_input(tx, input_index, script)`**：为某个交易输入创建一个 ECDSA 签名，用传入的脚本计算签名哈希。对 P2SH 输入，这个 script 参数应当是赎回脚本。
 
-**`script.to_hex()`**: Serializes the Script object into its hexadecimal byte representation, which is pushed as data onto the stack during script execution.
+**`script.to_hex()`**：把 Script 对象序列化成十六进制字节表示，在脚本执行时作为数据压入栈。
 
-### Multi-signature Stack Execution Analysis
+### 多签栈执行分析
 
-Let's trace through the complete script execution using our real transaction data, following Bitcoin Core's two-phase P2SH execution:
+我们用真实交易数据把整个脚本执行走一遍，跟着 Bitcoin Core 的两阶段 P2SH 执行：
 
-**Transaction ID**: [`e68bef53...ba0fd4e0`](https://mempool.space/testnet/tx/e68bef534c7536300c3ae5ccd0f79e031cab29d262380a37269151e8ba0fd4e0?showDetails=true)
+**Transaction ID**：[`e68bef53...ba0fd4e0`](https://mempool.space/testnet/tx/e68bef534c7536300c3ae5ccd0f79e031cab29d262380a37269151e8ba0fd4e0?showDetails=true)
 
-## Phase 1: ScriptSig + ScriptPubKey Execution
+## 阶段 1：ScriptSig + ScriptPubKey 执行
 
-**Initial State:**
+**初始状态：**
 
 ```
 │ (empty)                                │
 └────────────────────────────────────────┘
 ```
 
-### 1. PUSH OP_0: Multisig bug workaround
-Bitcoin's OP_CHECKMULTISIG has a known off-by-one bug that pops an extra item from the stack. An OP_0 is pushed to compensate.
+### 1. PUSH OP_0：多签 bug 的补丁
+比特币的 OP_CHECKMULTISIG 有个已知的差一位 bug，会多弹出一个栈元素。压入一个 OP_0 来补偿。
 
 ```
 │ 00 (op_zero)                           │
 └────────────────────────────────────────┘
 ```
 
-### 2. PUSH Alice's Signature: First authorization
+### 2. PUSH Alice 的签名：第一个授权
 
 ```
 │ 30440220694f...7a6501 (alice_sig)      │
@@ -181,7 +181,7 @@ Bitcoin's OP_CHECKMULTISIG has a known off-by-one bug that pops an extra item fr
 └────────────────────────────────────────┘
 ```
 
-### 3. PUSH Bob's Signature: Second authorization  
+### 3. PUSH Bob 的签名：第二个授权  
 
 ```
 │ 3044022065f8...fd9e01 (bob_sig)        │
@@ -190,7 +190,7 @@ Bitcoin's OP_CHECKMULTISIG has a known off-by-one bug that pops an extra item fr
 └────────────────────────────────────────┘
 ```
 
-### 4. PUSH Redeem Script: Reveal the spending conditions
+### 4. PUSH 赎回脚本：揭示花费条件
 
 ```
 │ 522102898711...601153ae (redeem_script)  │
@@ -200,8 +200,8 @@ Bitcoin's OP_CHECKMULTISIG has a known off-by-one bug that pops an extra item fr
 └──────────────────────────────────────────┘
 ```
 
-### 5. OP_HASH160: Verify script hash matches
-The P2SH locking script `OP_HASH160 <script_hash> OP_EQUAL` is executed:
+### 5. OP_HASH160：验证脚本哈希匹配
+执行 P2SH 锁定脚本 `OP_HASH160 <script_hash> OP_EQUAL`：
 
 ```
 │ dd81b5beb3d8...5cb0ca (computed_hash)    │
@@ -211,7 +211,7 @@ The P2SH locking script `OP_HASH160 <script_hash> OP_EQUAL` is executed:
 └──────────────────────────────────────────┘
 ```
 
-### 6. PUSH Expected Hash: From locking script
+### 6. PUSH 期望哈希：来自锁定脚本
 
 ```
 │ dd81b5beb3d8...5cb0ca (expected_hash)    │
@@ -222,7 +222,7 @@ The P2SH locking script `OP_HASH160 <script_hash> OP_EQUAL` is executed:
 └──────────────────────────────────────────┘
 ```
 
-### 7. OP_EQUAL: Confirm hash match
+### 7. OP_EQUAL：确认哈希匹配
 
 ```
 │ 1 (true)                               │
@@ -232,18 +232,18 @@ The P2SH locking script `OP_HASH160 <script_hash> OP_EQUAL` is executed:
 └────────────────────────────────────────┘
 ```
 
-**(Phase 1 complete: Hash verification successful)**
+**（阶段 1 完成：哈希验证成功）**
 
-## P2SH Transition: Stack Reset Mechanism
+## P2SH 切换：栈重置机制
 
-**Critical Point**: Bitcoin Core recognizes the P2SH pattern and transitions to a second validation phase by:
+**关键点**：Bitcoin Core 识别出 P2SH 模式，切换到第二个验证阶段，做法是：
 
-1. **Detects P2SH pattern**: `OP_HASH160 <hash> OP_EQUAL` 
-2. **Resets stack**: Back to post-scriptSig state (discards TRUE)
-3. **Extracts redeem script**: From original scriptSig data
-4. **Prepares clean execution**: For redeem script with signature data
+1. **检测 P2SH 模式**：`OP_HASH160 <hash> OP_EQUAL`
+2. **重置栈**：回到 scriptSig 执行后的状态（丢弃 TRUE）
+3. **取出赎回脚本**：从原始 scriptSig 数据里
+4. **准备干净的执行**：给赎回脚本配上签名数据
 
-**Stack Reset to Post-ScriptSig State:**
+**栈重置回 ScriptSig 后状态：**
 
 ```
 │ 3044022065f8...fd9e01 (bob_sig)        │
@@ -252,13 +252,13 @@ The P2SH locking script `OP_HASH160 <script_hash> OP_EQUAL` is executed:
 └────────────────────────────────────────┘
 ```
 
-**(TRUE is discarded - redeem script begins with clean stack)**
+**（TRUE 被丢弃——赎回脚本从干净的栈开始）**
 
-## Phase 2: Redeem Script Execution
+## 阶段 2：赎回脚本执行
 
-Bitcoin Core now executes the redeem script: `OP_2 alice_pk bob_pk carol_pk OP_3 OP_CHECKMULTISIG`
+Bitcoin Core 现在执行赎回脚本：`OP_2 alice_pk bob_pk carol_pk OP_3 OP_CHECKMULTISIG`
 
-### 8. OP_2: Push required signature count
+### 8. OP_2：压入要求的签名数
 
 ```
 │ 2 (required_sigs)                      │
@@ -268,7 +268,7 @@ Bitcoin Core now executes the redeem script: `OP_2 alice_pk bob_pk carol_pk OP_3
 └────────────────────────────────────────┘
 ```
 
-### 9-11. PUSH Public Keys: Load verification keys
+### 9-11. PUSH 公钥：加载验证密钥
 
 ```
 │ 0317aa89b43f...996011 (carol_pk)       │
@@ -281,7 +281,7 @@ Bitcoin Core now executes the redeem script: `OP_2 alice_pk bob_pk carol_pk OP_3
 └────────────────────────────────────────┘
 ```
 
-### 12. OP_3: Push total key count
+### 12. OP_3：压入密钥总数
 
 ```
 │ 3 (total_keys)                         │
@@ -295,41 +295,41 @@ Bitcoin Core now executes the redeem script: `OP_2 alice_pk bob_pk carol_pk OP_3
 └────────────────────────────────────────┘
 ```
 
-### 13. OP_CHECKMULTISIG: Verify signatures
-The opcode consumes:
-- Key count (3)
-- Public keys (Alice, Bob, Carol)  
-- Signature count (2)
-- Signatures (Alice's, Bob's)
-- Extra item (OP_0, due to bug)
+### 13. OP_CHECKMULTISIG：验证签名
+这个操作码消费：
+- 密钥数（3）
+- 公钥（Alice、Bob、Carol）
+- 签名数（2）
+- 签名（Alice 的、Bob 的）
+- 多余的一项（OP_0，因为那个 bug）
 
-Verification process:
-1. Alice's signature verified against Alice's public key [OK]
-2. Bob's signature verified against Bob's public key [OK]
-3. Required threshold (2-of-3) satisfied [OK]
+验证过程：
+1. Alice 的签名用 Alice 的公钥验证通过 [OK]
+2. Bob 的签名用 Bob 的公钥验证通过 [OK]
+3. 满足所需门限（2-of-3）[OK]
 
-### Final State: Multisig Verification Complete
+### 最终状态：多签验证完成
 
 ```
 │ 1 (true)                               │
 └────────────────────────────────────────┘
 ```
 
-**(P2SH execution successful: Clean two-phase verification)**
+**（P2SH 执行成功：干净的两阶段验证）**
 
-## 3.3 Time Locks with CSV
+## 3.3 用 CSV 做时间锁
 
-CheckSequenceVerify (CSV) enforces a relative time lock: spending is delayed by a number of blocks counted from when the UTXO was created. Below is a real testnet implementation.
+CheckSequenceVerify（CSV）强制一个相对时间锁：花费被推迟若干个区块，从 UTXO 创建那一刻起算。下面是一个真实的 testnet 实现。
 
-### A 3-Block Time Lock
+### 一个 3 区块时间锁
 
-**Transaction ID**: [`34f5bf0c...0861906f`](https://mempool.space/testnet/tx/34f5bf0cf328d77059b5674e71442ded8cdcfc723d0136733e0dbf180861906f?showDetails=true)
+**Transaction ID**：[`34f5bf0c...0861906f`](https://mempool.space/testnet/tx/34f5bf0cf328d77059b5674e71442ded8cdcfc723d0136733e0dbf180861906f?showDetails=true)
 
-This transaction combines a CSV time lock with a P2PKH signature check in one redeem script — the shape used for inheritance and escrow conditions.
+这笔交易把 CSV 时间锁和 P2PKH 签名检查合进同一段赎回脚本——继承和托管条件用的就是这个形态。
 
-### CSV Script Construction
+### CSV 脚本构造
 
-The time lock is a simple linear script, no branching:
+时间锁是一段简单的线性脚本，没有分支：
 
 ```python
 from bitcoinutils.setup import setup
@@ -358,15 +358,15 @@ def create_csv_script():
     return redeem_script
 ```
 
-### bitcoinutils CSV Functions
+### bitcoinutils CSV 函数
 
-**`Sequence(TYPE_RELATIVE_TIMELOCK, blocks)`**: Creates a sequence object for relative block-based delays. The sequence value encodes the time constraint that will be enforced by OP_CHECKSEQUENCEVERIFY.
+**`Sequence(TYPE_RELATIVE_TIMELOCK, blocks)`**：创建一个基于区块的相对延迟 sequence 对象。这个 sequence 值编码了将由 OP_CHECKSEQUENCEVERIFY 强制的时间约束。
 
-**`seq.for_script()`**: Returns the sequence value formatted for use in script opcodes (pushes the delay value onto the stack).
+**`seq.for_script()`**：返回供脚本操作码使用的 sequence 值（把延迟值压入栈）。
 
-**`seq.for_input_sequence()`**: Returns the sequence value for the transaction input's sequence field, which CSV validates against.
+**`seq.for_input_sequence()`**：返回供交易输入 sequence 字段使用的值，CSV 会拿它来校验。
 
-### Spending the Time-Locked UTXO
+### 花费时间锁 UTXO
 
 ```python
 def spend_csv_script():
@@ -385,22 +385,22 @@ def spend_csv_script():
     ])
 ```
 
-### CSV Stack Execution Analysis
+### CSV 栈执行分析
 
-Let's trace through the execution using real transaction data from our testnet example:
+我们用 testnet 例子里的真实交易数据把执行走一遍：
 
-**ScriptSig Data**:
-- Signature: `30440220...` (71 bytes)
-- Public Key: `0250be5f...6bb4d3` (33 bytes)  
-- Redeem Script: `53b27576a9145cdc...88ac` (28 bytes)
+**ScriptSig 数据**：
+- Signature：`30440220...`（71 字节）
+- Public Key：`0250be5f...6bb4d3`（33 字节）
+- Redeem Script：`53b27576a9145cdc...88ac`（28 字节）
 
-## Phase 1: P2SH Hash Verification
+## 阶段 1：P2SH 哈希验证
 
-**(Stack reset mechanism applies - see multisig section for details)**
+**（栈重置机制同样适用——细节见多签那一节）**
 
-## Phase 2: CSV + P2PKH Execution
+## 阶段 2：CSV + P2PKH 执行
 
-**Initial State** (after P2SH reset):
+**初始状态**（P2SH 重置之后）：
 
 ```
 │ 0250be5fc44ec...4d3 (pubkey)           │
@@ -408,7 +408,7 @@ Let's trace through the execution using real transaction data from our testnet e
 └────────────────────────────────────────┘
 ```
 
-### 1. PUSH 3: Time delay requirement
+### 1. PUSH 3：时间延迟要求
 
 ```
 │ 3 (delay_blocks)                       │
@@ -417,8 +417,8 @@ Let's trace through the execution using real transaction data from our testnet e
 └────────────────────────────────────────┘
 ```
 
-### 2. OP_CHECKSEQUENCEVERIFY: Verify time lock
-CSV validates that the transaction input's sequence number >= 3:
+### 2. OP_CHECKSEQUENCEVERIFY：验证时间锁
+CSV 校验交易输入的 sequence number >= 3：
 
 ```
 │ 3 (delay_blocks)                       │
@@ -427,9 +427,9 @@ CSV validates that the transaction input's sequence number >= 3:
 └────────────────────────────────────────┘
 ```
 
-**(Verification: nSequence >= 3 blocks since UTXO creation)**
+**（验证：自 UTXO 创建以来 nSequence >= 3 个区块）**
 
-### 3. OP_DROP: Remove delay value
+### 3. OP_DROP：移除延迟值
 
 ```
 │ 0250be5fc44ec...4d3 (pubkey)           │
@@ -437,7 +437,7 @@ CSV validates that the transaction input's sequence number >= 3:
 └────────────────────────────────────────┘
 ```
 
-### 4. OP_DUP: Begin P2PKH verification
+### 4. OP_DUP：开始 P2PKH 验证
 
 ```
 │ 0250be5fc44ec...4d3 (pubkey)           │
@@ -446,7 +446,7 @@ CSV validates that the transaction input's sequence number >= 3:
 └────────────────────────────────────────┘
 ```
 
-### 5. OP_HASH160: Hash public key
+### 5. OP_HASH160：哈希公钥
 
 ```
 │ 5cdc28d6b1876...cabaadcc (pubkey_hash) │
@@ -455,7 +455,7 @@ CSV validates that the transaction input's sequence number >= 3:
 └────────────────────────────────────────┘
 ```
 
-### 6. PUSH Expected Hash: From redeem script
+### 6. PUSH 期望哈希：来自赎回脚本
 
 ```
 │ 5cdc28d6b1876...cabaadcc (expected_hash) │
@@ -465,7 +465,7 @@ CSV validates that the transaction input's sequence number >= 3:
 └──────────────────────────────────────────┘
 ```
 
-### 7. OP_EQUALVERIFY: Confirm hash match
+### 7. OP_EQUALVERIFY：确认哈希匹配
 
 ```
 │ 0250be5fc44ec...4d3 (pubkey)           │
@@ -473,20 +473,20 @@ CSV validates that the transaction input's sequence number >= 3:
 └────────────────────────────────────────┘
 ```
 
-### 8. OP_CHECKSIG: Final signature verification
+### 8. OP_CHECKSIG：最终签名验证
 
 ```
 │ 1 (true)                               │
 └────────────────────────────────────────┘
 ```
 
-**(Time lock satisfied and signature verified - CSV spending successful)**
+**（时间锁满足、签名验证通过——CSV 花费成功）**
 
-### Time Lock Error Handling
+### 时间锁错误处理
 
-**Common Error: `non-BIP68-final`**
+**常见错误：`non-BIP68-final`**
 
-If you attempt to spend before the time lock expires:
+如果你在时间锁到期前就尝试花费：
 
 ```python
 # This will fail if fewer than 3 blocks have passed
@@ -494,31 +494,31 @@ response = requests.post(mempool_api, data=signed_tx)
 # Returns: "non-BIP68-final"
 ```
 
-The transaction is rejected because `nSequence < required_delay`, violating the CSV constraint.
+交易被拒，因为 `nSequence < required_delay`，违反了 CSV 约束。
 
-### Where CSV Is Used
+### CSV 用在哪里
 
-- **Inheritance**: funds become spendable by an heir after a set period of owner inactivity.
-- **Escrow**: a fallback path opens after a delay if the primary condition isn't met.
-- **Payment channels**: Lightning uses CSV to enforce settlement delays, which is what gives each party a window to dispute an old state.
+- **继承**：在所有者一段时间不活动后，资金对继承人变得可花费。
+- **托管**：主条件未满足时，过了延迟就开放一条 fallback 路径。
+- **支付通道**：Lightning 用 CSV 强制结算延迟，这正是给了每一方一个窗口去对旧状态提出异议。
 
-## 3.4 P2SH vs P2PKH: What P2SH Adds, and Where It Stops
+## 3.4 P2SH 对比 P2PKH：P2SH 加了什么、又卡在哪
 
-P2SH extends Bitcoin Script from single-signature authorization to multi-party and time-based conditions, while keeping the same compact address format. But it has a limit that motivates everything Taproot does next.
+P2SH 把比特币脚本从单签授权扩展到多方和基于时间的条件，同时保持同样紧凑的地址格式。但它有一个局限，正是这个局限催生了 Taproot 接下来做的一切。
 
-When a P2SH output is spent, the *entire* redeem script is revealed — every branch, whether or not it was taken. There's no way to expose only the relevant path. So the structure is linear and fully visible: every signature path, time-lock clause, and fallback condition ends up on chain. And because the redeem script rides in the scriptSig, multisig and inheritance setups carry real size overhead, which means higher fees.
+当一个 P2SH 输出被花费时，*整段*赎回脚本都会被揭示——每一条分支，无论它有没有被走到。没有办法只暴露相关的那一条。于是结构是线性、完全可见的：每一条签名路径、时间锁条款、fallback 条件，最后都上了链。而且因为赎回脚本要塞进 scriptSig，多签和继承这类设置会带来不小的体积开销，也就是更高的手续费。
 
-Taproot addresses both directly: complex scripts stay hidden until needed, committed into a tree where only the executed path is ever revealed. That is the thread the next chapters pick up.
+Taproot 直接解决这两点：复杂脚本在需要之前一直藏着，承诺进一棵树里，只有实际执行的那条路径才会被揭示。这正是后面几章接住的线索。
 
-## Chapter Summary
+## 本章小结
 
-P2SH locks a script behind its hash and reveals it only at spending time. We built the two patterns that recur for the rest of the book:
+P2SH 把一段脚本锁在它的哈希后面，只在花费时揭示。我们搭起了后面全书反复出现的两个模式：
 
-- **Multisig** — `OP_CHECKMULTISIG` with a 2-of-3 redeem script, plus the `OP_0` workaround for its off-by-one bug.
-- **Time locks** — `OP_CHECKSEQUENCEVERIFY` for a relative delay, combined with a P2PKH check.
+- **多签** —— `OP_CHECKMULTISIG` 配一个 2-of-3 赎回脚本，外加补它差一位 bug 的 `OP_0`。
+- **时间锁** —— `OP_CHECKSEQUENCEVERIFY` 做一个相对延迟，配上一次 P2PKH 检查。
 
-We traced both on the stack, including P2SH's two-phase execution: verify the script's hash, then reset the stack and run the revealed script.
+两者我们都在栈上走了一遍，包括 P2SH 的两阶段执行：先验证脚本的哈希，再重置栈、运行揭示出的脚本。
 
-One limitation matters most for what follows: P2SH reveals the *entire* redeem script when spent, every branch included. Taproot's answer to exactly that — revealing only the branch you use — is what the rest of the book builds toward.
+有一个局限对后文最关键：P2SH 在花费时揭示*整段*赎回脚本，每条分支都在内。Taproot 针对的正是这一点——只揭示你用的那条分支——而这是全书后面所要搭向的目标。
 
-**Next.** Chapter 4 turns to SegWit: moving the witness out of the transaction body, which fixes malleability and sets up Taproot's witness-based spending paths.
+**下一章。** 第 4 章转到 SegWit：把见证移出交易主体，修掉可锻性，并为 Taproot 基于见证的花费路径做铺垫。
