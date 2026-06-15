@@ -6,7 +6,7 @@
 ## 目录
 
 - [第01章：私钥、公钥与地址编码](./Chapter%2001%20%E7%A7%81%E9%92%A5%E3%80%81%E5%85%AC%E9%92%A5%E4%B8%8E%E5%9C%B0%E5%9D%80%E7%BC%96%E7%A0%81.md)
-- 第02章：Bitcoin Script 基础——堆栈操作与 P2PKH（待译）
+- [第02章：Bitcoin Script 基础——堆栈操作与 P2PKH](./Chapter%2002%20Bitcoin%20Script%20%E5%9F%BA%E7%A1%80%E2%80%94%E2%80%94%E5%A0%86%E6%A0%88%E6%93%8D%E4%BD%9C%E4%B8%8E%20P2PKH.md)
 - [第03章：P2SH 脚本工程——从多签到时间锁](./Chapter%2003%20P2SH%20%E8%84%9A%E6%9C%AC%E5%B7%A5%E7%A8%8B%E2%80%94%E2%80%94%E4%BB%8E%E5%A4%9A%E7%AD%BE%E5%88%B0%E6%97%B6%E9%97%B4%E9%94%81.md)
 - [第04章：构建 SegWit 交易——构造、栈执行与可锻性](./Chapter%2004%20%E6%9E%84%E5%BB%BA%20SegWit%20%E4%BA%A4%E6%98%93%E2%80%94%E2%80%94%E6%9E%84%E9%80%A0%E3%80%81%E6%A0%88%E6%89%A7%E8%A1%8C%E4%B8%8E%E5%8F%AF%E9%94%BB%E6%80%A7.md)
 - [第05章：Taproot——比特币脚本系统的演进](./Chapter%2005%20Taproot%E2%80%94%E2%80%94%E6%AF%94%E7%89%B9%E5%B8%81%E8%84%9A%E6%9C%AC%E7%B3%BB%E7%BB%9F%E7%9A%84%E6%BC%94%E8%BF%9B.md)
