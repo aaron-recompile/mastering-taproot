@@ -6,7 +6,7 @@ Chapter 05 Taproot The Evolution of Bitcoins Script System
 Chapter 06 Building Real Taproot Contracts - Single-Leaf Hash Lock and Dual-Path Spending
 Chapter 07 Taproot Dual-Leaf Script Tree - Complete Implementation of Hash Lock and Bob Script
 Chapter 08 Four-Leaf Taproot Script Tree - Complete Implementation of Enterprise-Grade Multi-Path Spending
-Chapter 09 Ordinals and BRC-20 - Taproot Witness as Data Layer
+Chapter 09 Ordinals and BRC-20 - Data Envelopes in Single-Leaf Script Paths
 Chapter 10 — RGB: Client-Side Validation & Taproot Commitments
 Chapter 11 Lightning Network Channels - From P2WSH Multisig to Taproot Privacy Channels
-Chapter 12 Silent Payments - Elliptic Curve Arithmetic and Address Privacy
+Chapter 12: Silent Payments — Elliptic Curve Arithmetic and Address Privacy
