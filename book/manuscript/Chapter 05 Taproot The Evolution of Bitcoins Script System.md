@@ -1,6 +1,6 @@
 # Chapter 5: Taproot: The Evolution of Bitcoin's Script System
 
-Taproot represents the culmination of Bitcoin's scripting evolution: until spent, complex spending conditions can be made to look identical to simple payments on-chain.
+Taproot lets complex spending conditions look identical to simple payments on-chain: until the funds are spent, an elaborate script tree and a single-key payment are indistinguishable.
 
 Two pieces of machinery make this possible, and this chapter takes them one at a time:
 

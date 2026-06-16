@@ -556,7 +556,7 @@ No DER means:
   ✓ Smaller witness data
 ```
 
-Taproot's fixed-size signatures are the final answer to the encoding variability problem that started this entire Deep Dive. The journey from DER encoding issues to 64-byte Schnorr signatures spans a decade of Bitcoin engineering:
+Taproot's fixed-size signatures close out the encoding-variability problem this Deep Dive started with. The steps from DER-encoded ECDSA to 64-byte Schnorr signatures span about a decade:
 
 ```
 2009: Bitcoin launches with DER-encoded ECDSA in scriptSig

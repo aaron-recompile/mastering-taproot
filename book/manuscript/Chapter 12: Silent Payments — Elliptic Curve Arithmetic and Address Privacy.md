@@ -1,6 +1,6 @@
 # Chapter 12: Silent Payments — Elliptic Curve Arithmetic and Address Privacy
 
-## Why This Chapter Matters
+## Back to Chapter 5's Tweak
 
 Silent Payments (BIP352) solves a problem that requires no consensus change: the receiver publishes a static address once; each payment produces a fresh, unlinkable Taproot output. The chain sees an ordinary P2TR transfer.
 
@@ -116,7 +116,7 @@ Traditional receiving faces a dilemma: a fixed address is easy to publish but ex
 
 When Bob scans for incoming payments, he performs ECDH against each transaction's input public key. If the derivation succeeds, the payment is confirmed as his and he can spend it.
 
-This is privacy guaranteed by mathematics: no intermediary, no cooperation from the receiver required — the sender alone protects the privacy of both parties.
+The privacy here comes entirely from the math: no intermediary, and no cooperation from the receiver — the sender alone protects both parties' privacy.
 
 ## Taproot Applications
 

@@ -1,12 +1,12 @@
 # Chapter 9: Ordinals and BRC-20 — Data Envelopes in Single-Leaf Script Paths
 
-## Why This Chapter Matters
+## A Single Leaf That Carries Data
 
 Ordinals and BRC-20 generated significant attention in 2023, and a large volume of related transactions exist on mainnet. If you look at their on-chain structure, they turn out to be surprisingly simple: a single-leaf Taproot script path, one commit transaction, one reveal transaction.
 
 The previous eight chapters moved from single-leaf to four-leaf, with increasingly complex script trees. Ordinals steps back to a single leaf — not because it is simpler, but because the purpose is different. The script in the leaf is not there to execute a condition; it is there to carry data. The VM skips the data segment, the data stays in the witness, and an off-chain indexer reads it.
 
-This structure can be broken down using the same analytical framework built in earlier chapters.
+We can take it apart with the same commit–reveal mechanics from the Taproot chapters — only here the revealed leaf carries data instead of a spending condition.
 
 ---
 
@@ -84,7 +84,7 @@ Script:
 18746578742f706c61696e3b636861727365743d7574662d38
 00
 357b2270223a226272632d3230222c226f70223a226d696e74222c
-2274696f6b223a2244454d4f222c22616d74223a2231303030227d
+227469636b223a2244454d4f222c22616d74223a2231303030227d
 68
 
 Control block:

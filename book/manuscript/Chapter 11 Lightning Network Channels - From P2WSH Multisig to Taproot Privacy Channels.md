@@ -1,6 +1,6 @@
 # Chapter 11: Lightning Network Channels — From P2WSH Multisig to Taproot Privacy Channels
 
-## Why This Chapter Matters
+## Lightning: One of Taproot's Original Motivations
 
 The Lightning Network is one of Taproot's original design motivations.
 
