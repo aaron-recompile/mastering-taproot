@@ -6,8 +6,6 @@ Silent Payments (BIP352) solves a problem that requires no consensus change: the
 
 The mathematical core is the same formula from Chapter 5's key tweaking: `P = Q + t·G`. The tweak `t` comes from an ECDH shared secret instead of a script tree Merkle root. If you understood Taproot's tweak, the math of Silent Payments is already in your hands.
 
----
-
 ## The Address Reuse Problem
 
 Once a Bitcoin address is public, every payment to it is permanently visible on-chain and linked together. A donation page that publishes a receiving address exposes its complete payment history to anyone who looks. Using a fresh address for each payment requires coordinating with the sender in advance — impossible in a public-facing context.
@@ -21,8 +19,6 @@ ECDH guarantees this works: `a · (b_scan · G) = b_scan · (a · G)`, where `a`
 `t` is something both parties can derive independently, but only Bob holds `b_spend` — so only Bob can construct the spending key `b_spend + t`. Alice pays out; only Bob can claim.
 
 Silent Payments turn "interaction" into key publication. Bob publishes `B_scan` in advance; Alice's payment transaction naturally exposes her input public key. Two public keys meet on-chain — a complete "interaction" with no communication required.
-
----
 
 ## On-Chain Example: Testnet Silent Payment
 
@@ -51,7 +47,7 @@ Tweak t:            026a61d9053ee35bd74560c408fa3aeeee397291bad7cef0b2ce50f24ef5
 One-time pubkey P:  03963061c3a266ae856b7755f2203e6d57e2ac9b9abf43f9414c05474eebea6e8b
 ```
 
-One-time Taproot address: `tb1p9kq07ze6yu9lumrhgwrs9030nahrm7qq6cqjmz73a8ys9ya5rdvswnew3j`
+One-time Taproot address: `tb1p9kq07ze6yu9lumrhgwrs9030n...vswnew3j`
 
 Bob independently derives the same address using `b_scan · A` — match confirmed.
 
@@ -82,8 +78,6 @@ p · G = (b_spend + t) · G = B_spend + t · G = P  [OK]
 
 Bob sends 4846 sats to his regular address. On-chain: another ordinary Taproot transfer. No link to Bob's Silent Payment address.
 
----
-
 ## The Mathematics: Same as Taproot's Tweak
 
 Silent Payment address derivation and Taproot output key derivation share the same structure:
@@ -102,13 +96,9 @@ Both exploit elliptic curve linearity: point addition on public keys corresponds
 
 Alice computes `a · B_scan`; Bob computes `b_scan · A`. The results are equal — the fundamental property of ECDH: `a · (b_scan · G) = b_scan · (a · G)`. No communication required. Both parties independently arrive at the same shared secret, then use it to derive the same output address.
 
----
-
 ## The Two-Key Split
 
 Bob's static address contains two public keys, `B_scan` and `B_spend`, visible to anyone. The corresponding private keys have separate roles: `b_scan` can only perform ECDH to find which outputs belong to Bob — without `b_spend` it cannot spend anything, so it can safely be delegated to a scanning server. `b_spend` is the sole source of the spending key `b_spend + t` and must be kept strictly secret.
-
----
 
 ## Chapter Summary
 

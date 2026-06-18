@@ -8,8 +8,6 @@ The previous eight chapters moved from single-leaf to four-leaf, with increasing
 
 We can take it apart with the same commit–reveal mechanics from the Taproot chapters — only here the revealed leaf carries data instead of a spending condition.
 
----
-
 ## The Data Envelope: `OP_0 OP_IF ... OP_ENDIF`
 
 An Ordinals leaf script looks like this:
@@ -43,8 +41,6 @@ VM execution path:
 The bytes the VM skips are still in the witness, committed on-chain with the reveal transaction and immutable thereafter. Bitcoin consensus validates the signature and script format; it does not interpret data. An off-chain indexer can scan the witness and compute token state according to its protocol rules (see the on-chain example below for the specific JSON format).
 
 BRC-20 uses the same structure, but specifies conventions for the JSON fields (`p` / `op` / `tick` / `amt`).
-
----
 
 ## On-Chain Example: Testnet BRC-20 Mint Transaction Pair
 
@@ -118,8 +114,6 @@ c1  50be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3
 
 First byte `0xc1`: parity bit = 1, leaf version = `0xc0` (Tapscript). The remaining 32 bytes are the internal public key. A single-leaf tree requires no Merkle path; the control block is 33 bytes, identical in structure to the single-leaf control block in Chapter 7.
 
----
-
 ## Code: Building the Inscription Leaf and Temporary Address
 
 ```python
@@ -148,8 +142,6 @@ print(temp_address.to_string())
 ```
 
 `get_taproot_address([[inscription_script]])` takes a single-leaf list, the same call pattern as Chapter 7. The generated address can be verified against output 0 of the commit transaction.
-
----
 
 ## Code: Commit and Reveal (Key Fragments)
 
@@ -195,15 +187,11 @@ reveal_tx.witnesses.append(TxWitnessInput([
 
 The `sign_taproot_input` parameters match the script-path signing in Chapter 7. `ControlBlock` takes the single-leaf list and leaf index `0`.
 
----
-
 ## Indexer
 
 This transaction is a valid Tapscript spend: signature valid, script format correct. The indexer scans the reveal witness, locates the `OP_0 OP_IF ... OP_ENDIF` segment, extracts the JSON, and computes state according to its protocol rules — all off-chain.
 
 Different indexers can produce different interpretations of the same on-chain history. Divergences between ord versions have occurred in practice, causing different indexers to report different balances for the same mint operation on different exchanges. The correctness of these protocols ultimately depends on trust in a specific indexer.
-
----
 
 ## Chapter Summary
 

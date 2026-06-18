@@ -8,8 +8,6 @@ Chapter 9 showed how Taproot's witness can serve as a data layer (Ordinals). Cha
 
 A Lightning payment channel locks funds into a jointly controlled output, allows unlimited off-chain balance updates, then settles with a single on-chain close. Under Taproot, the cooperative close — over 90% of all channel closes — leaves no trace distinguishing it from an ordinary payment.
 
----
-
 ## P2WSH: The SegWit v0 Script Hash
 
 Traditional Lightning channels are built on P2WSH (Pay-to-Witness-Script-Hash), the SegWit v0 upgrade of P2SH. Both put a hash of a complex script on-chain and reveal the script itself only at spend time. The difference: P2SH uses HASH160 (20 bytes); P2WSH uses SHA256 (32 bytes), raising collision resistance from 80 bits to 128 bits. P2WSH also moves script execution into the witness field, benefiting from SegWit's discounted weight.
@@ -25,8 +23,6 @@ ScriptPubKey (on-chain):
 ```
 
 The funding output exposes only a hash, but when spent the witness reveals everything: two DER signatures and the complete multisig script. Any observer knows this is a Lightning channel.
-
----
 
 ## On-Chain Example: P2WSH Channel Funding and Close
 
@@ -94,8 +90,6 @@ Total witness: ~214 bytes
 ```
 
 Observer concludes: "This is a 2-of-2 multisig. Almost certainly a Lightning channel."
-
----
 
 ## Taproot Channel: MuSig2 Key Aggregation
 
@@ -171,8 +165,6 @@ funding_addr = funding_pub.get_taproot_address()
 
 - vout:1: `tb1pnn82l6...9m8uvc`, 10,000 sats, P2TR
 - Observer sees: `OP_1 <32-byte key>` — an ordinary Taproot address. Could be anything.
-
----
 
 ## MuSig2 Cooperative Close: The Four-Round Signing Protocol
 
@@ -289,8 +281,6 @@ Total witness: 64 bytes
 
 Observer concludes: "An ordinary Taproot payment. Nothing unusual."
 
----
-
 ## Side-by-Side Comparison
 
 The same channel. The same two parties. The same final balance allocation. Run `code/chapter11/03_compare_witness.py` to reproduce the following output:
@@ -309,8 +299,6 @@ Close tx vsize            168 vbytes         154 vbytes
 Identifiable as channel   Yes                No
 Witness savings           —                  70%
 ```
-
----
 
 ## Chapter Summary
 
