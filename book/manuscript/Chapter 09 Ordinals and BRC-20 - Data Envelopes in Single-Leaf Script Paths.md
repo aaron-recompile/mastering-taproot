@@ -103,7 +103,7 @@ c150be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3
 | 43–66 | `74657874...7574662d38` | `"text/plain;charset=utf-8"` |
 | 67 | `00` | OP_0 |
 | 68 | `35` | OP_PUSHBYTES_53 |
-| 69–121 | `7b2270...227d` | `{"p":"brc-20","op":"mint","tick":"DEMO","amt":"1000"}` |
+| 69–121 | `7b2270...227d` | `{"p":"brc-20",...}` (full JSON below) |
 | 122 | `68` | OP_ENDIF |
 
 **Control block** (33 bytes):
