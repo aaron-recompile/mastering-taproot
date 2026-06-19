@@ -91,7 +91,6 @@ script1 = Script([
 ])
 
 # Script 2: CSV Timelock
-from bitcoinutils.utils import Sequence, TYPE_RELATIVE_TIMELOCK
 relative_blocks = 2
 seq = Sequence(TYPE_RELATIVE_TIMELOCK, relative_blocks)
 script2 = Script([
@@ -380,7 +379,7 @@ tx.witnesses.append(TxWitnessInput([
 **Start** — both signatures loaded, `sig_alice` on top:
 
 ```
-| sig_alice   | ← top, consumed first
+| sig_alice   | <- top, consumed first
 | sig_bob     |
 └─────────────┘
 ```
@@ -388,7 +387,7 @@ tx.witnesses.append(TxWitnessInput([
 **OP_0** — pushes the counter, initialized to 0:
 
 ```
-| 0           | ← counter
+| 0           | <- counter
 | sig_alice   |
 | sig_bob     |
 └─────────────┘
@@ -407,7 +406,7 @@ tx.witnesses.append(TxWitnessInput([
 **OP_CHECKSIGADD** — pops the key, pops the counter, pops the signature below it; verifies `sig_alice` against `alice_pubkey`; pushes counter+1:
 
 ```
-| 1           | ← counter is now 1
+| 1           | <- counter is now 1
 | sig_bob     |
 └─────────────┘
 ```
@@ -415,7 +414,7 @@ tx.witnesses.append(TxWitnessInput([
 **[Bob_PubKey]** then **OP_CHECKSIGADD** — same again for Bob, consuming `sig_bob`:
 
 ```
-| 2           | ← counter is now 2
+| 2           | <- counter is now 2
 └─────────────┘
 ```
 
@@ -553,7 +552,7 @@ def parse_control_block_bytes():
 
 ### Climbing the two levels back to the address
 
-With the script and its two sibling hashes in hand, verification is the same idea as Chapter 7 — recompute the root and check it rebuilds the address — but now it takes two TapBranch steps instead of one:
+With the script and its two sibling hashes in hand, verification is the same idea as Chapter 7 — recompute the root and check it rebuilds the address — but now it takes two TapBranch steps instead of one. The code below reuses `tagged_hash`, the BIP-341 tagged-hash helper introduced in Chapter 7 (`tagged_hash(tag, msg) = SHA256(SHA256(tag) || SHA256(tag) || msg)`); bring it into scope before running this block:
 
 ```python
 def reconstruct_merkle_root_step_by_step():

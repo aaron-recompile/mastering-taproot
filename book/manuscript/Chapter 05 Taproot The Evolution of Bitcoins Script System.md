@@ -45,7 +45,7 @@ From this, three capabilities follow:
 2. **Single-signature Output**: Multiple parties can cooperatively produce one single unified signature
 3. **Key Tweaking**: Keys can be deterministically modified with commitments
 
-note:“Single-signature output” refers to producing one BIP340 signature on-chain via MuSig2 (a wallet-level protocol), not a consensus-level signature aggregation across inputs
+> Note: "Single-signature output" refers to producing one BIP340 signature on-chain via MuSig2 (a wallet-level protocol), not a consensus-level signature aggregation across inputs.
 
 ### Visual Comparison: ECDSA vs Schnorr
 
@@ -99,9 +99,9 @@ d' = d + t
 **Even-Y requirement (BIP340):**  
 Taproot uses x-only public keys — but the actual point on secp256k1 still has two possible y values (even / odd).  
 The BIP340 rule is: the final tweaked output key **must correspond to an even-y point**.  
-If the point ends up odd-y, implementations flip the private key to `d' = n − d'` so that `P' = d'*G` lands on the even branch.
+If the point ends up odd-y, implementations flip the private key to `d' = n - d'` so that `P' = d'*G` lands on the even branch.
 
-(Why this matters later: in script-path spending this parity is encoded into the control block's lowest bit. If you don’t track this now, script-path won’t verify later.)
+(Why this matters later: in script-path spending this parity is encoded into the control block's lowest bit. If you don't track this now, script-path won't verify later.)
 
 ### Tweak Flow
 
@@ -349,13 +349,13 @@ The pattern `OP_1 <32-bytes>` selects the Taproot interpreter. A witness contain
 The witness stack contains only the signature:
 
 ```
-│ 7d25fbc9...da99f3 (schnorr_signature)   │
+│ 7d25fbc9...41da99f3 (schnorr_signature) │
 │ 912591f3...5f697a3 (output_key)         │
 └─────────────────────────────────────────┘
 ```
 
 ### 5. Schnorr Verification: Verify signature against output key
-The interpreter runs BIP340 verification: parse `(r, s)`, compute the challenge `e = tagged_hash("BIP0340/challenge", r ‖ P ‖ m)`, compute `R = s·G − e·P`, and accept if `r` equals the x-coordinate of `R`.
+The interpreter runs BIP340 verification: parse `(r, s)`, compute the challenge `e = tagged_hash("BIP0340/challenge", r || P || m)`, compute `R = s·G - e·P`, and accept if `r` equals the x-coordinate of `R`.
 
 **Verification Result:**
 

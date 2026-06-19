@@ -166,7 +166,7 @@ Take Hal later spending a P2PKH-locked 10 BTC and walk the script end to end.
 **Locking Script** (from the UTXO):
 
 ```
-OP_DUP OP_HASH160 OP_PUSHBYTES_20 340cfcffe029e6935f4e4e5839a2ff5f29c7a571 OP_EQUALVERIFY OP_CHECKSIG
+OP_DUP OP_HASH160 OP_PUSHBYTES_20 c5b28d6bba91a2693a9b1876bcd3929323890fb2 OP_EQUALVERIFY OP_CHECKSIG
 
 ```
 
@@ -206,7 +206,7 @@ The unlocking script runs first, pushing its two items; then the locking script'
 4. **OP_HASH160**: Hash the top stack item:
 ```
     
-│ 340cfcff...7a571 (hash160_result)     │
+│ c5b28d6b...890fb2 (hash160_result)    │
 │ 02898711...8519 (public_key)          │
 │ 30440220...914f01 (signature)         │
 └───────────────────────────────────────┘
@@ -214,8 +214,8 @@ The unlocking script runs first, pushing its two items; then the locking script'
 5. **Push Expected Hash**: From the locking script:
 ```
     
-│ 340cfcff...7a571 (expected_hash)      │
-│ 340cfcff...7a571 (computed_hash)      │
+│ c5b28d6b...890fb2 (expected_hash)     │
+│ c5b28d6b...890fb2 (computed_hash)     │
 │ 02898711...8519 (public_key)          │
 │ 30440220...914f01 (signature)         │
 └───────────────────────────────────────┘

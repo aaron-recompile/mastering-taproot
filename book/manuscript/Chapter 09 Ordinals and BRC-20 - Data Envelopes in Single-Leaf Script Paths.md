@@ -27,15 +27,15 @@ OP_ENDIF
 VM execution path:
 
 ```
-  <pubkey> OP_CHECKSIG  ← signature verified, executed
-  OP_0                  ← false pushed onto stack, executed
-  OP_IF                 ← condition false, jump to OP_ENDIF
+  <pubkey> OP_CHECKSIG  <- signature verified, executed
+  OP_0                  <- false pushed onto stack, executed
+  OP_IF                 <- condition false, jump to OP_ENDIF
   ┌──────────────────────────────────────┐
   │  "ord"                               │
-  │  content-type                        │  ← VM skips
+  │  content-type                        │  <- VM skips
   │  JSON payload                        │     indexer reads here
   └──────────────────────────────────────┘
-  OP_ENDIF              ← execution resumes
+  OP_ENDIF              <- execution resumes
 ```
 
 The bytes the VM skips are still in the witness, committed on-chain with the reveal transaction and immutable thereafter. Bitcoin consensus validates the signature and script format; it does not interpret data. An off-chain indexer can scan the witness and compute token state according to its protocol rules (see the on-chain example below for the specific JSON format).
@@ -71,8 +71,8 @@ The three witness elements of the reveal:
 
 ```
 Signature (continuous hex, line-wrapped for display):
-894bf65e9593b1ce18071d44325add446b91e4638271318f1980d432e5de88f
-b743fcf7c69a5a3e98ffe0306944ddc1e4ab38e4c525fb1e0846263183a6de375
+894bf65e9593b1ce18071d44325add446b91e4638271318f1980d432e5de88fb
+743fcf7c69a5a3e98ffe0306944ddc1e4ab38e4c525fb1e0846263183a6de375
 
 Script:
 2050be5fc44ec580c387bf45df275aaa8b27e2d7716af31f10eeed357d126bb4d3ac

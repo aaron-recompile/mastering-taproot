@@ -17,7 +17,7 @@ Legacy Transaction Structure:
 │         │ │     ││         │            │
 │         │ └─────┘│         │            │
 └─────────────────────────────────────────┘
-           ↓
+           v
     TXID = SHA256(SHA256(entire_transaction))
 
 SegWit Transaction Structure:
@@ -35,7 +35,7 @@ SegWit Transaction Structure:
 │    │ Signature │ Public Key          │  │
 │    └─────────────────────────────────┘  │
 └─────────────────────────────────────────┘
-           ↓
+           v
     WTXID = SHA256(SHA256(entire_transaction[base + witness]))
 ```
 
@@ -55,7 +55,7 @@ That breaks any protocol that pins a later transaction to an earlier TXID — Li
 ```
 Lightning Channel Setup:
 Funding TX (TXID_A) -> Commitment TX -> Timeout TX
-                          ↓              ↓
+                          v              v
                      References      References
                        TXID_A         TXID_B
 
@@ -286,7 +286,7 @@ SegWit Transaction Format
 ├── Witness Data: 0247304402...c8519 (NEW - authorization data)
 └── Locktime: 00000000
 
-Total: 191 bytes (added witness section: 82 bytes)
+Total: 191 bytes (added witness section: 107 bytes)
 ```
 
 **Note:** Sequence `0xfffffffd` enables RBF (Replace-By-Fee), so the transaction can later be replaced by a higher-fee version — which is why explorers tag it "RBF".
@@ -457,7 +457,7 @@ Taproot is just witness version 1 with a 32-byte program — the next slot in th
 
 ```
 Transaction Weight = (Base Size * 4) + Witness Size
-Virtual Size = Weight ÷ 4
+Virtual Size = Weight / 4
 ```
 
 Base bytes cost 4 weight units each; witness bytes cost 1. So moving authorization data into the witness lowers its weight. How much you actually save depends on how much of the transaction is authorization data — it's structure-dependent, not a fixed percentage.

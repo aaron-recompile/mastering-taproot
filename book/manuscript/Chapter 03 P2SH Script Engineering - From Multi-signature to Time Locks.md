@@ -156,7 +156,7 @@ Let's trace through the complete script execution using our real transaction dat
 
 **Transaction ID**: [`e68bef53...ba0fd4e0`](https://mempool.space/testnet/tx/e68bef534c7536300c3ae5ccd0f79e031cab29d262380a37269151e8ba0fd4e0?showDetails=true)
 
-## Phase 1: ScriptSig + ScriptPubKey Execution
+### Phase 1: ScriptSig + ScriptPubKey Execution
 
 **Initial State:**
 
@@ -234,7 +234,7 @@ The P2SH locking script `OP_HASH160 <script_hash> OP_EQUAL` is executed:
 
 **(Phase 1 complete: Hash verification successful)**
 
-## P2SH Transition: Stack Reset Mechanism
+### P2SH Transition: Stack Reset Mechanism
 
 **Critical Point**: Bitcoin Core recognizes the P2SH pattern and transitions to a second validation phase by:
 
@@ -254,7 +254,7 @@ The P2SH locking script `OP_HASH160 <script_hash> OP_EQUAL` is executed:
 
 **(TRUE is discarded - redeem script begins with clean stack)**
 
-## Phase 2: Redeem Script Execution
+### Phase 2: Redeem Script Execution
 
 Bitcoin Core now executes the redeem script: `OP_2 alice_pk bob_pk carol_pk OP_3 OP_CHECKMULTISIG`
 
@@ -394,11 +394,11 @@ Let's trace through the execution using real transaction data from our testnet e
 - Public Key: `0250be5f...6bb4d3` (33 bytes)  
 - Redeem Script: `53b27576a9145cdc...88ac` (28 bytes)
 
-## Phase 1: P2SH Hash Verification
+### Phase 1: P2SH Hash Verification
 
 **(Stack reset mechanism applies - see multisig section for details)**
 
-## Phase 2: CSV + P2PKH Execution
+### Phase 2: CSV + P2PKH Execution
 
 **Initial State** (after P2SH reset):
 

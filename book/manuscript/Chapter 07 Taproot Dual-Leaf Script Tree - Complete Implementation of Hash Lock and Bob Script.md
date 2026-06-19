@@ -247,7 +247,7 @@ Control Block: c050be5f...8105cf9df
 
 ├─ c0: leaf version (0xc0)
 ├─ 50be5fc4...126bb4d3: Alice's internal pubkey
-└─ 2faaa677...8105cf9df: Bob script's TapLeaf hash  ← the sibling
+└─ 2faaa677...8105cf9df: Bob script's TapLeaf hash  <- the sibling
 ```
 
 **Bob-script path**, from [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024daff64cea4c82f129aa9a8e97b4622899961452d1d144604e65a70cfe0?showDetails=true):
@@ -257,7 +257,7 @@ Control Block: c050be5f...8f10f659e
 
 ├─ c0: leaf version (0xc0)
 ├─ 50be5fc4...126bb4d3: Alice's internal pubkey (same!)
-└─ fe78d852...8f10f659e: hash script's TapLeaf hash  ← the sibling
+└─ fe78d852...8f10f659e: hash script's TapLeaf hash  <- the sibling
 ```
 
 Two things to read off these directly:
@@ -422,7 +422,7 @@ From transaction [`185024da...5a70cfe0`](https://mempool.space/testnet/tx/185024
 **Witness stack**
 
 ```
-[0] 26a0eadc...31f9f1c5c                            (bob_signature)
+[0] 26a0eadc...1f9f1c5c                             (bob_signature)
 [1] 2084b595...ceef63af5ac                          (script_hex)
 [2] c050be5f...8f10f659e                            (control_block)
 ```

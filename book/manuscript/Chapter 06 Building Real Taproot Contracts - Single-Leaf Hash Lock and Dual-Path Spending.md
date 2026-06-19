@@ -141,7 +141,7 @@ Its ScriptPubKey is just `OP_1 <32-byte-output-key>` — byte-for-byte the same 
 
 ### Phase 2 — Reveal via the key path (Alice reclaims)
 
-One thing to set up before we spend: the next two phases each demonstrate *one* path — key path here, script path next. A UTXO can only be spent once, so these are not the same coin spent two ways; each path is shown on its own separate funding of the same address. That's why the input txids differ — `4fd83128…` here, `9e193d8c…` in Phase 3.
+One thing to set up before we spend: the next two phases each demonstrate *one* path — key path here, script path next. A UTXO can only be spent once, so these are not the same coin spent two ways; each path is shown on its own separate funding of the same address. That's why the input txids differ — `4fd83128...3d2d2c6d` here, `9e193d8c...40629886` in Phase 3.
 
 If Alice just wants her funds back, she takes the key path:
 

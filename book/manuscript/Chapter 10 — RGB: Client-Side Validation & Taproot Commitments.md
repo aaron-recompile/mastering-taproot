@@ -28,9 +28,9 @@ Tapret is different — the commitment is not placed in an output, but inside a 
 
 ```
 Tapret leaf script (64 bytes, leaf version 0xC0):
-  50 50 ... 50              ← 29 bytes OP_RESERVED (0x50)
-  6A                        ← OP_RETURN
-  21                        ← OP_PUSHBYTES_33
+  50 50 ... 50              <- 29 bytes OP_RESERVED (0x50)
+  6A                        <- OP_RETURN
+  21                        <- OP_PUSHBYTES_33
   <32-byte MPC commitment>
   <1-byte nonce>
 ```
@@ -44,7 +44,7 @@ For a single existing script Script_A:
 ```
 Before:                        After:
 
-      P                               P'   ← different tweaked key
+      P                               P'   <- different tweaked key
       |                               |
   merkle_root                    merkle_root'
       |                           /           \
@@ -93,8 +93,8 @@ All outputs are P2TR. No OP_RETURN. Indistinguishable from a normal Taproot spen
 Owned:
   State         Seal                                                   Witness
   assetOwner:
-          100   bc:tapret1st:64a14551...c20b6b:1   bc:64a14551...c20b6b
-                                                   (bitcoin:4909164, 2026-04-04 03:49:34)
+          100   bc:tapret1st:64a14551...35c20b6b:1   bc:64a14551...35c20b6b
+                                                     (bitcoin:4909164, 2026-04-04 03:49:34)
 ```
 
 Field-by-field breakdown:
@@ -103,24 +103,24 @@ Field-by-field breakdown:
 |-------|-------|---------|
 | `100` | 100 | Bob's current asset balance |
 | `bc:tapret1st:` | prefix | Commitment scheme: Bitcoin testnet, Tapret, depth 1 |
-| `64a14551...c20b6b:1` | txid:vout | Commitment anchored to vout:1 of this transaction |
-| `bc:64a14551...c20b6b` | witness | On-chain anchor txid |
+| `64a14551...35c20b6b:1` | txid:vout | Commitment anchored to vout:1 of this transaction |
+| `bc:64a14551...35c20b6b` | witness | On-chain anchor txid |
 | `bitcoin:4909164` | block height | Height at which the transaction was confirmed |
 
-The seal `tapret1st:64a14551...c20b6b:1` points to vout:1 visible on mempool — a standard P2TR output. The Tapret leaf inside the script tree does not appear on mempool; it exists in the RGB client's consignment data.
+The seal `tapret1st:64a14551...35c20b6b:1` points to vout:1 visible on mempool — a standard P2TR output. The Tapret leaf inside the script tree does not appear on mempool; it exists in the RGB client's consignment data.
 
 **Seal lifecycle**
 
 Genesis seal (closed):
 
 ```
-22d13f86...5d2a:0  ->  1,000,000 units  ->  spent
+22d13f86...c43d5d2a:0  ->  1,000,000 units  ->  spent
 ```
 
 This transfer opens two new seals, both anchored to the same transaction:
 
 ```
-Transfer transaction: 64a14551...c20b6b
+Transfer transaction: 64a14551...35c20b6b
   vout:0  ->  tapret1st:...:0  ->  999,900 (Alice's change)
   vout:1  ->  tapret1st:...:1  ->  100     (Bob's receipt)
 
@@ -167,9 +167,9 @@ Owned:
 Owned:
   State         Seal                                                   Witness
   assetOwner:
-       999900   bc:tapret1st:64a14551...c20b6b:0  ...  -- third-party
-          100   bc:tapret1st:64a14551...c20b6b:1  ...  -- third-party
-      1000000   bc:tapret1st:22d13f86...5d2a:0    ~    -- spent
+       999900   bc:tapret1st:64a14551...35c20b6b:0  ...  -- third-party
+          100   bc:tapret1st:64a14551...35c20b6b:1  ...  -- third-party
+      1000000   bc:tapret1st:22d13f86...c43d5d2a:0  ~    -- spent
 ```
 
 `third-party` is not an error. The state transition is valid at the protocol level, amounts are conserved, and Bob correctly received 100. `third-party` is a wallet descriptor scope issue: the client can see these seals exist, but cannot identify them as Alice's currently spendable state. This is a property of the client view layer, not an RGB protocol problem.
@@ -178,7 +178,7 @@ Owned:
 
 ```
 On-chain (visible to anyone):
-  tx 64a14551...c20b6b
+  tx 64a14551...35c20b6b
   ├── vout:0  ->  P2TR address tb1pd057...  (600 sats)
   └── vout:1  ->  P2TR address tb1p9yja...  (2,000 sats)
   No OP_RETURN output. No RGB marker of any kind.

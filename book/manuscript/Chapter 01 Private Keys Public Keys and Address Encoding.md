@@ -76,7 +76,7 @@ A public key is a point on the secp256k1 elliptic curve, obtained by multiplying
 Bitcoin signs with ECDSA over the secp256k1 curve, defined by:
 
 ```
-y² = x³ + 7
+y^2 = x^3 + 7
 
 ```
 
@@ -178,10 +178,10 @@ print(f"Taproot:            {taproot_address}")
 **Example output:**
 
 ```
-Legacy (P2PKH):     1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
-SegWit Native:      bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080
-SegWit P2SH:        3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy
-Taproot:            bc1plz0h3rlj2zvn88pgywqtr9k3df3p75p3ltuxh0
+Legacy (P2PKH):     18hJWrx86tQJr5wtnvPPvPGyLcZh1iWv3f
+SegWit Native:      bc1q235z8005az3sd7yvwptcx4fcvnylg6t5a0k9mz
+SegWit P2SH:        3HG3QEzpBSJ8qJFZFxYZ2MF5GcBgjhjan8
+Taproot:            bc1p75g5xj09v30jh604nhhaff83ph268tz30lyycrkujx589p9yj3vqdr74ns
 
 ```
 
@@ -227,7 +227,7 @@ Taproot addresses use Bech32m, a tweaked Bech32 that fixes an edge case in the o
 - Prefix: `bc1p`
 - Format: Bech32m encoded
 - Benefits: key-path and script-path spends share one address format
-- Example: `bc1plz0h3rlj2zvn88pgywqtr9k3df3p75p3ltuxh0`
+- Example: `bc1p75g5xj...vqdr74ns` (62 chars; full address in §1.4 output)
 
 ## 1.6 Address Format Comparison
 
@@ -254,13 +254,13 @@ One diagram ties the whole chain together — from generating a key down to the 
 
 ```
 Private Key (k)
-    ↓ ECDSA multiplication
+    v ECDSA multiplication
 Public Key (x, y)
-    ↓ SHA256 + RIPEMD160
+    v SHA256 + RIPEMD160
 Public Key Hash (20 bytes)
-    ↓ Version + Checksum + Encoding
+    v Version + Checksum + Encoding
 Address (Base58/Bech32)
-  ↓ Decoded by wallet/node
+  v Decoded by wallet/node
 ScriptPubKey (locking script on-chain)
 ```
 
