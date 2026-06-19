@@ -10,6 +10,21 @@ Demonstrate structural understanding of the UTXO model and transaction semantics
 
 ---
 
+## Reading
+
+- **Mastering Taproot**, Chapters 1–5
+- **Bitcoin whitepaper**, [Section 2 — Transactions](https://bitcoin.org/bitcoin.pdf) (for Q3)
+
+---
+
+## Do this week (from lab kickoff)
+
+- Read the chapters; **run the code examples** in `code/chapter01/` … `code/chapter05/`
+- Try interactive mode: [bitcoincoding.dev](https://bitcoincoding.dev/)
+- Cohort survey (see Discord / [aaron-lab-instructions](../../aaron-lab-instructions))
+
+---
+
 ## Questions
 
 1. **UTXO vs physical cash** — Where does the analogy break?
