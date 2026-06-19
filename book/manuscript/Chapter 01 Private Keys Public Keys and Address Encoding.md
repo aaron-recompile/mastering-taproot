@@ -260,7 +260,7 @@ Public Key (x, y)
 Public Key Hash (20 bytes)
     v Version + Checksum + Encoding
 Address (Base58/Bech32)
-  v Decoded by wallet/node
+    v Decoded by wallet/node
 ScriptPubKey (locking script on-chain)
 ```
 

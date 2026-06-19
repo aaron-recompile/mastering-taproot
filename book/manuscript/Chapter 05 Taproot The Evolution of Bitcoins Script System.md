@@ -20,7 +20,7 @@ The properties of ECDSA that get in Taproot's way:
 - **Malleability**: A third party can alter the encoding of a signature without invalidating it — the same signature, two on-chain forms.
 - **No aggregation**: Two signatures from two parties stay as two separate signatures. They cannot be combined into one.
 - **No linearity**: Adding two ECDSA signatures does not produce a valid signature for the sum of their keys. There is no clean algebra to build on.
-- **Variable size**: 71–72 bytes typically, depending on encoding.
+- **Variable size**: 70–72 bytes typically, depending on encoding.
 
 BIP340 specifies Schnorr signatures over the same secp256k1 curve, designed around the properties Taproot needs:
 
@@ -79,7 +79,7 @@ Schnorr Aggregated (3-of-3):
 
 ## Key Tweaking
 
-Taproot leverages Schnorr's linearity through key tweaking (also called tweakable commitment in BIP340/341/342).
+Taproot leverages Schnorr's linearity through key tweaking (also called tweakable commitment, defined in BIP341).
 
 Conceptually: 
 
@@ -106,10 +106,10 @@ If the point ends up odd-y, implementations flip the private key to `d' = n - d'
 ### Tweak Flow
 
 ```
-Internal Key (P) ─────────► + tweak ─────────► Output Key (P')
-                              ▲                      │
+Internal Key (P) ─────────> + tweak ─────────> Output Key (P')
+                              ^                      │
                               │                      │
-                       Merkle Root ◄─────────────────┘
+                       Merkle Root <─────────────────┘
                     script_path_commitment
 ```
 

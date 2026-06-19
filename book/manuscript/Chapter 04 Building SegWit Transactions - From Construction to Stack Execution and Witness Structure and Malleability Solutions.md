@@ -54,10 +54,10 @@ That breaks any protocol that pins a later transaction to an earlier TXID — Li
 
 ```
 Lightning Channel Setup:
-Funding TX (TXID_A) -> Commitment TX -> Timeout TX
-                          v              v
-                     References      References
-                       TXID_A         TXID_B
+Funding TX (TXID_A) -> Commitment TX (TXID_B) -> Timeout TX
+                          v                          v
+                     References                  References
+                       TXID_A                      TXID_B
 
 If TXID_A changes due to malleability:
 -> Commitment TX becomes invalid

@@ -90,12 +90,12 @@ To validate, the node combines the two scripts, runs them as a single program, a
 Bitcoin Script runs on a stack, the same model used by languages like Forth or PostScript. Every operation works on a Last-In-First-Out (LIFO) stack: data gets pushed on, opcodes pop their arguments off and push results back. A short arithmetic example shows the whole mechanism.
 
 Initial Stack: Empty
+
 ```
 │ (empty)                               │
 └───────────────────────────────────────┘
 
 ```
-
 
 PUSH 3
 
@@ -105,8 +105,8 @@ PUSH 3
 
 ```
 
-
 PUSH 5
+
 ```
 
 │ 5                                     │
@@ -115,11 +115,13 @@ PUSH 5
 ```
 
 ADD Operation
+
 ```
 
 │ 8                                     │
 └───────────────────────────────────────┘
 ```
+
 The ADD step is the pattern in miniature: pop the top two numbers (5, then 3), add them, push the result (8). Nothing else is going on. That predictability is exactly why the model can carry complex spending conditions without becoming a security liability.
 
 ### P2PKH: The Foundation Script
@@ -182,36 +184,44 @@ OP_PUSHBYTES_33 02898711e6bf63f5cbe1b38c05e89d6c391c59e9f8f695da44bf3d20ca674c85
 The unlocking script runs first, pushing its two items; then the locking script's opcodes consume them. Each step below shows the stack right after the operation named.
 
 1. **Push Signature to Stack**:
+
 ```
     
 │ 30440220...914f01 (signature)         │
 └───────────────────────────────────────┘
 ```
-    
+
 2. **Push Public Key to Stack**:
+
 ```
     
 │ 02898711...8519 (public_key)          │
 │ 30440220...914f01 (signature)         │
 └───────────────────────────────────────┘
-``` 
+```
+
 3. **OP_DUP**: Duplicate the top stack item (public key):
+
 ```
     
 │ 02898711...8519 (public_key)          │
 │ 02898711...8519 (public_key)          │
 │ 30440220...914f01 (signature)         │
 └───────────────────────────────────────┘
-```    
+```
+
 4. **OP_HASH160**: Hash the top stack item:
+
 ```
     
 │ c5b28d6b...890fb2 (hash160_result)    │
 │ 02898711...8519 (public_key)          │
 │ 30440220...914f01 (signature)         │
 └───────────────────────────────────────┘
-``` 
+```
+
 5. **Push Expected Hash**: From the locking script:
+
 ```
     
 │ c5b28d6b...890fb2 (expected_hash)     │
@@ -222,19 +232,23 @@ The unlocking script runs first, pushing its two items; then the locking script'
 ```
 
 6. **OP_EQUALVERIFY**: Compare top two items, remove both if equal:
+
 ```
     
 │ 02898711...8519 (public_key)          │
 │ 30440220...914f01 (signature)         │
 └───────────────────────────────────────┘
 (Script fails if hashes don't match)
-```    
+```
+
 7. **OP_CHECKSIG**: Verify signature against public key and transaction:
+
 ```
 
 │ 1 (TRUE)                              │
 └───────────────────────────────────────┘
-``` 
+```
+
 8. **Final Check**: The script succeeds because the only item left on the stack is non-zero.
 
 ### P2PKH Security Properties
@@ -371,45 +385,55 @@ With both scripts parsed, the execution runs step by step against the real data.
 │ (empty)                               │
 └───────────────────────────────────────┘
 ```
+
 Script: <signature> <pubkey> OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
 
 **Step 1 - Push Signature**:
 
 Operation: PUSH 304402...443d01
+
 ```
 │ 304402...443d01 (signature)           │
 └───────────────────────────────────────┘
 ```
+
 **Step 2 - Push Public Key**:
 
 Operation: PUSH 02898711...8519
+
 ```
 │ 02898711...8519 (public_key)          │
 │ 304402...443d01 (signature)           │
 └───────────────────────────────────────┘
 ```
+
 **Step 3 - OP_DUP**:
 
 Operation: Duplicate top stack item
+
 ```
 │ 02898711...8519 (public_key)          │
 │ 02898711...8519 (public_key)          │
 │ 304402...443d01 (signature)           │
 └───────────────────────────────────────┘
 ```
+
 **Step 4 - OP_HASH160**:
 
 Operation: Hash160(top stack item)
 Calculation: hash160(02898711...8519) = c5b28d6bba91a2693a9b1876bcd3929323890fb2
+
 ```
 │ c5b28d6b...890fb2 (computed_hash)     │
 │ 02898711...8519 (public_key)          │
 │ 304402...443d01 (signature)           │
 └───────────────────────────────────────┘
 ```
+
 **Step 5 - Push Expected Hash**:
 
 Operation: PUSH c5b28d6bba91a2693a9b1876bcd3929323890fb2
+
 ```
 │ c5b28d6b...890fb2 (expected_hash)     │
 │ c5b28d6b...890fb2 (computed_hash)     │
@@ -422,11 +446,13 @@ Operation: PUSH c5b28d6bba91a2693a9b1876bcd3929323890fb2
 
 Operation: Compare top two items, remove both if equal
 Verification: c5b28d6b... == c5b28d6b... [OK] (Match)
+
 ```
 │ 02898711...8519 (public_key)          │
 │ 304402...443d01 (signature)           │
 └───────────────────────────────────────┘
 ```
+
 **Step 7 - OP_CHECKSIG**:
 
 Operation: Verify signature against public key and transaction
@@ -437,15 +463,19 @@ Signature: 304402...443d01
 Transaction data: (serialized transaction for signature)
 
 Verification: ECDSA verification [OK] (Valid signature)
+
 ```
 │ 1 (TRUE)                              │
 └───────────────────────────────────────┘
 ```
+
 **Final State**:
+
 ```
 │ 1 (TRUE)                              │
 └───────────────────────────────────────┘
 ```
+
 Result: SUCCESS (non-zero value on stack)
 
 ### Transaction Broadcast Result

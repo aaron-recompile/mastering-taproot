@@ -93,7 +93,7 @@ def create_dual_leaf_taproot():
     return taproot_address, hash_script, bob_script
 
 # Actually generated address
-# Output: tb1p93c4...9a4w3z
+# Output: tb1p93c4...gq9a4w3z
 ```
 
 Two things to notice, because they decide the rest:
@@ -411,8 +411,8 @@ This is the same hash lock from Chapter 6, so the stack walk is the same:
 **OP_PUSHNUM_1** — pushes 1, a non-zero top of stack, marking the script satisfied:
 
 ```
-|          01          |
-└──────────────────────┘
+|         01          |
+└─────────────────────┘
 ```
 
 ## Script Path 2: Bob Script
@@ -455,8 +455,8 @@ The script is two steps: push Bob's key, then check a signature against it.
 **OP_CHECKSIG** — pops the key and the signature, runs BIP340 Schnorr verification against the transaction, and pushes 1 if it holds:
 
 ```
-|          01          | (signature valid)
-└──────────────────────┘
+|         01          | (signature valid)
+└─────────────────────┘
 ```
 
 So the two leaves end the same way — a 1 on top of the stack — but get there differently: the hash leaf proves knowledge of a *secret*, the Bob leaf proves possession of a *key*. One address, two unlock conditions, and only the one you use is ever revealed.

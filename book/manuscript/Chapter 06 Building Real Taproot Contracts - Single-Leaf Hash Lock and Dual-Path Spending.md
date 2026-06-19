@@ -109,7 +109,7 @@ a820936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af8851
 
 - `a8`: OP_SHA256
 - `20`: PUSH 32 bytes
-- `936a185c...07af`: SHA256("helloworld")
+- `936a185c...8f8f07af`: SHA256("helloworld")
 - `88`: OP_EQUALVERIFY
 - `51`: OP_TRUE
 
@@ -476,7 +476,7 @@ script_hex = script.to_hex()  # "a820936a185c...8851"
 
 Here's the script running, one opcode at a time.
 
-**Script**: `OP_SHA256 OP_PUSHBYTES_32 936a185c...07af OP_EQUALVERIFY OP_PUSHNUM_1`
+**Script**: `OP_SHA256 OP_PUSHBYTES_32 936a185c...8f8f07af OP_EQUALVERIFY OP_PUSHNUM_1`
 
 **Start** — the witness loads the preimage onto the stack:
 
@@ -489,19 +489,19 @@ Here's the script running, one opcode at a time.
 **OP_SHA256** — pops the preimage, pushes its SHA256:
 
 ```
-| 936a185c...f8f8f07af  |
+| 936a185c...8f8f07af   |
 | # computed_hash       |
 └───────────────────────┘
 ```
 
-(SHA256("helloworld") = 936a185c...07af)
+(SHA256("helloworld") = 936a185c...8f8f07af)
 
 **PUSH 32 bytes** — the script pushes its baked-in expected hash:
 
 ```
-| 936a185c...f8f8f07af  |
+| 936a185c...8f8f07af   |
 | # expected_hash       |
-| 936a185c...f8f8f07af  |
+| 936a185c...8f8f07af   |
 | # computed_hash       |
 └───────────────────────┘
 ```
